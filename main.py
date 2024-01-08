@@ -1,12 +1,11 @@
 from nes_py.wrappers import JoypadSpace
 import gym_super_mario_bros
+import gymnasium
 from gym_super_mario_bros.actions import SIMPLE_MOVEMENT
 from stable_baselines3 import PPO
 import os
 from stable_baselines3.common.callbacks import BaseCallback
-from gymnasium.wrappers import GrayScaleObservation, ResizeObservation
-#from stable_baselines3.common.envs import VecFrameStack
-#from stable_baselines3.common.envs import DummyVecEnv
+from gymnasium.wrappers import GrayScaleObservation, ResizeObservation, FrameStack, FlattenObservation, AtariPreprocessing
 
 
 CHECKPOINT_DIR = "./train/"
@@ -16,7 +15,8 @@ LOG_DIR = "./logs/"
 def test_random_actions_tutorial():
 
     env = gym_super_mario_bros.make('SuperMarioBros-v3', render_mode="human")
-    env = JoypadSpace(env, SIMPLE_MOVEMENT)
+
+    env = reduce_action_space(env)
     print_environment_data(env)
 
     terminated = True
@@ -51,24 +51,89 @@ class TrainAndLoggingCallback(BaseCallback):
 def train_agent():
     env = gym_super_mario_bros.make('SuperMarioBros-v0', render_mode=None)
     print_environment_data(env)
-    env = JoypadSpace(env, SIMPLE_MOVEMENT)
-    env = GrayScaleObservation(env, keep_dim=True) # Convertimos la imagen en blanco y negro
-    env = ResizeObservation(env, shape=(60, 64))   # Reducimos el tamaño de la imagen al 25%
-    #env = DummyVecEnv([lambda: env])
-    #env = VecFrameStack(env, n_stack=2)
+
+    env = reduce_action_space(env)
+    env = reduce_observation_space(env)
+    #env = AtariPreprocessing(env) # No funciona, quizas especificando parámetros sí. De todas maneras prefiero hacerlo a pelo
+
     print_environment_data(env)
+
     callback = TrainAndLoggingCallback(check_freq=10000, save_path=CHECKPOINT_DIR)
+
     model = PPO("CnnPolicy", env, verbose=1, tensorboard_log=LOG_DIR, learning_rate=0.000001, n_steps=512)
     model.learn(total_timesteps=4000000, callback=callback)
+
     return model
+
+
+class FrameSkipWrapper(gymnasium.Wrapper):
+    def __init__(self, env, skip):
+        """
+        FrameSkipWrapper wewewe
+
+        Parameters:
+        - env: The original environment to wrap.
+        - skip: Number of frames to skip between each action.
+        """
+        super(FrameSkipWrapper, self).__init__(env)
+        self.skip = skip
+
+    def step(self, action):
+        total_reward = 0.0
+        done = False
+        for i in range(self.skip):
+            observation, reward, terminated, truncated, info = self.env.step(action)
+            total_reward += reward
+            if done:
+                break
+        return observation, reward, terminated, truncated, info
+
+
+def load_and_test_model():
+
+    env = gym_super_mario_bros.make('SuperMarioBros-v0', render_mode="human")
+    env = JoypadSpace(env, SIMPLE_MOVEMENT)
+    env = GrayScaleObservation(env, keep_dim=True)
+
+    print(SIMPLE_MOVEMENT)
+    print("Número de acciones " + str(env.action_space))
+    print("Espacio observable" + str(env.observation_space))
+    terminated = True
+    truncated = False
+    model = PPO.load('./train_pend/best_model_10000.zip', env=env)
+    vec_env = model.get_env()
+    observation = vec_env.reset()
+    for step in range(5000):
+        action, _state = model.predict(observation)
+        observation, reward, done, info = vec_env.step(action)
+        env.render()
+
+    env.close()
 
 
 def print_environment_data(env):
     print("Número de acciones: " + str(env.action_space))
     print("Espacio observable: " + str(env.observation_space))
 
+def reduce_action_space(env):
+    env = JoypadSpace(env, SIMPLE_MOVEMENT)
+    return env
+
+def reduce_observation_space(env):
+    # https://gymnasium.farama.org/api/wrappers/
+    env = GrayScaleObservation(env, keep_dim=True) # Convertimos la imagen en blanco y negro
+    env = ResizeObservation(env, shape=(60, 64))   # Reducimos el tamaño de la imagen al 25%
+
+    #env = FrameSkipWrapper(env,4)                 # Hace que vaya más lento, probablemente está mal
+    #env = FlattenObservation(env)                 # Parece que no funciona, tampoco estoy seguro de si era útil
+
+    return env
+
+def enhance_observation_space(env):
+    env = FrameStack(env, num_stack=3)
+    return env
 
 if __name__ == '__main__':
-    test_random_actions_tutorial()
-    #m = train_agent()
+    #test_random_actions_tutorial()
+    m = train_agent()
     print('model trained')
