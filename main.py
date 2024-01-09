@@ -17,6 +17,7 @@ def test_random_actions_tutorial():
     env = gym_super_mario_bros.make('SuperMarioBros-v3', render_mode="human")
 
     env = reduce_action_space(env)
+    env = reduce_observation_space(env)
     print_environment_data(env)
 
     terminated = True
@@ -54,11 +55,12 @@ def train_agent():
 
     env = reduce_action_space(env)
     env = reduce_observation_space(env)
-    #env = AtariPreprocessing(env) # No funciona, quizas especificando parámetros sí. De todas maneras prefiero hacerlo a pelo
+    env = enhance_observation_space(env)
+    #env = AtariPreprocessing(env,frame_skip=1, screen_size=84, grayscale_obs=True, scale_obs=False)
 
     print_environment_data(env)
 
-    callback = TrainAndLoggingCallback(check_freq=10000, save_path=CHECKPOINT_DIR)
+    callback = TrainAndLoggingCallback(check_freq=100000, save_path=CHECKPOINT_DIR)
 
     model = PPO("CnnPolicy", env, verbose=1, tensorboard_log=LOG_DIR, learning_rate=0.000001, n_steps=512)
     model.learn(total_timesteps=4000000, callback=callback)
@@ -68,13 +70,6 @@ def train_agent():
 
 class FrameSkipWrapper(gymnasium.Wrapper):
     def __init__(self, env, skip):
-        """
-        FrameSkipWrapper wewewe
-
-        Parameters:
-        - env: The original environment to wrap.
-        - skip: Number of frames to skip between each action.
-        """
         super(FrameSkipWrapper, self).__init__(env)
         self.skip = skip
 
@@ -84,23 +79,23 @@ class FrameSkipWrapper(gymnasium.Wrapper):
         for i in range(self.skip):
             observation, reward, terminated, truncated, info = self.env.step(action)
             total_reward += reward
+            done = done or terminated  # Update the 'done' flag
             if done:
                 break
-        return observation, reward, terminated, truncated, info
+        return observation, total_reward, done, truncated, info
+
+
 
 
 def load_and_test_model():
 
-    env = gym_super_mario_bros.make('SuperMarioBros-v0', render_mode="human")
-    env = JoypadSpace(env, SIMPLE_MOVEMENT)
-    env = GrayScaleObservation(env, keep_dim=True)
+    env = gym_super_mario_bros.make('SuperMarioBros-v3', render_mode="human")
+    env = reduce_action_space(env)
+    env = reduce_observation_space(env)
 
-    print(SIMPLE_MOVEMENT)
-    print("Número de acciones " + str(env.action_space))
-    print("Espacio observable" + str(env.observation_space))
     terminated = True
     truncated = False
-    model = PPO.load('./train_pend/best_model_10000.zip', env=env)
+    model = PPO.load('./train/best_model_5400000', env=env)
     vec_env = model.get_env()
     observation = vec_env.reset()
     for step in range(5000):
@@ -134,6 +129,7 @@ def enhance_observation_space(env):
     return env
 
 if __name__ == '__main__':
+    load_and_test_model()
     #test_random_actions_tutorial()
-    m = train_agent()
+    #m = train_agent()
     print('model trained')
