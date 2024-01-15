@@ -6,6 +6,7 @@ from stable_baselines3 import PPO
 import os
 from stable_baselines3.common.callbacks import BaseCallback
 from gymnasium.wrappers import GrayScaleObservation, ResizeObservation, FrameStack, FlattenObservation, AtariPreprocessing
+from stable_baselines3.common.vec_env import DummyVecEnv, VecFrameStack
 
 
 CHECKPOINT_DIR = "./train/"
@@ -56,16 +57,17 @@ def train_agent():
     env = reduce_action_space(env)
     env = reduce_observation_space(env)
     env = enhance_observation_space(env)
-    #env = AtariPreprocessing(env,frame_skip=1, screen_size=84, grayscale_obs=True, scale_obs=False)
 
     print_environment_data(env)
 
     callback = TrainAndLoggingCallback(check_freq=100000, save_path=CHECKPOINT_DIR)
 
     model = PPO("CnnPolicy", env, verbose=1, tensorboard_log=LOG_DIR, learning_rate=0.000001, n_steps=512)
+
     model.learn(total_timesteps=4000000, callback=callback)
 
     return model
+
 
 
 class FrameSkipWrapper(gymnasium.Wrapper):
@@ -79,7 +81,7 @@ class FrameSkipWrapper(gymnasium.Wrapper):
         for i in range(self.skip):
             observation, reward, terminated, truncated, info = self.env.step(action)
             total_reward += reward
-            done = done or terminated  # Update the 'done' flag
+            done = done or terminated
             if done:
                 break
         return observation, total_reward, done, truncated, info
@@ -89,13 +91,13 @@ class FrameSkipWrapper(gymnasium.Wrapper):
 
 def load_and_test_model():
 
-    env = gym_super_mario_bros.make('SuperMarioBros-v3', render_mode="human")
+    env = gym_super_mario_bros.make('SuperMarioBros-v0', render_mode="human")
     env = reduce_action_space(env)
     env = reduce_observation_space(env)
 
     terminated = True
     truncated = False
-    model = PPO.load('./train/best_model_5400000', env=env)
+    model = PPO.load('./train/best_model_8400000', env=env)
     vec_env = model.get_env()
     observation = vec_env.reset()
     for step in range(5000):
@@ -107,29 +109,33 @@ def load_and_test_model():
 
 
 def print_environment_data(env):
+    print("\n################################################################")
     print("Número de acciones: " + str(env.action_space))
     print("Espacio observable: " + str(env.observation_space))
+    print("################################################################\n")
 
 def reduce_action_space(env):
     env = JoypadSpace(env, SIMPLE_MOVEMENT)
     return env
 
+
 def reduce_observation_space(env):
     # https://gymnasium.farama.org/api/wrappers/
     env = GrayScaleObservation(env, keep_dim=True) # Convertimos la imagen en blanco y negro
     env = ResizeObservation(env, shape=(60, 64))   # Reducimos el tamaño de la imagen al 25%
-
-    #env = FrameSkipWrapper(env,4)                 # Hace que vaya más lento, probablemente está mal
-    #env = FlattenObservation(env)                 # Parece que no funciona, tampoco estoy seguro de si era útil
+    #env = DummyVecEnv([lambda: env])
+    #env = VecFrameStack(env, n_stack=4)
 
     return env
+
 
 def enhance_observation_space(env):
-    env = FrameStack(env, num_stack=3)
+    #env = FrameStack(env, num_stack=3)
     return env
 
+
 if __name__ == '__main__':
-    load_and_test_model()
+    #load_and_test_model()
     #test_random_actions_tutorial()
-    #m = train_agent()
-    print('model trained')
+    m = train_agent()
+    print('Model trained')
