@@ -77,9 +77,6 @@ def train_agent(env, model, check_freq, total_timesteps):
     print_environment_data(env)
 
     callback = TrainAndLoggingCallback(check_freq=check_freq, save_path=CHECKPOINT_DIR)
-
-    model = PPO("CnnPolicy", env, verbose=1, tensorboard_log=LOG_DIR, learning_rate=0.000001, n_steps=512)
-
     model.learn(total_timesteps=total_timesteps, callback=callback)
 
     return model
