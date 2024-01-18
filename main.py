@@ -23,8 +23,6 @@ def test_random_actions_tutorial(env):
     Returns:
         None
     """
-    print_environment_data(env)
-
     terminated = True
     truncated = False
     for step in range(5000):
@@ -67,14 +65,6 @@ def train_agent(env, model, check_freq, total_timesteps):
     Returns:
         model: The model after all iterations of the training
     """
-    print_environment_data(env)
-
-    #env = reduce_action_space(env)
-    env = reduce_observation_space(env)
-    env = enhance_observation_space(env)
-
-    print_environment_data(env)
-
     callback = TrainAndLoggingCallback(check_freq=check_freq, save_path=CHECKPOINT_DIR)
     model.learn(total_timesteps=total_timesteps, callback=callback)
 
@@ -85,16 +75,9 @@ def load_and_test_model(env, model_path):
     """
     Loads a trained model of the environment to test its performance
     """
-    print_environment_data(env)
-    #env = reduce_action_space(env)
-    env = reduce_observation_space(env)
-    env = enhance_observation_space(env)
-    print_environment_data(env)
-
     terminated = True
     truncated = False
-    model = PPO.load(model_path, env=env)
-    print("############################"+str(model.observation_space))
+    model = DQN.load(model_path, env=env)
     vec_env = model.get_env()
     observation = vec_env.reset()
     for step in range(5000):
@@ -132,8 +115,17 @@ def enhance_observation_space(env):
 
 if __name__ == '__main__':
     #env = gymnasium.make("ALE/SpaceInvaders-v5", render_mode='rgb_array')
-    #env = gymnasium.make('ALE/SpaceInvaders-v5', render_mode="human")
-    env = gym_super_mario_bros.make('SuperMarioBros-v0', render_mode="human")
+    env = gymnasium.make('ALE/SpaceInvaders-v5', render_mode="human")
+    #env = gym_super_mario_bros.make('SuperMarioBros-v0', render_mode="human")
+
+    print_environment_data(env)
+
+    #env = reduce_action_space(env)
+    env = reduce_observation_space(env)
+    env = enhance_observation_space(env)
+
+    print_environment_data(env)
+
     model = DQN("CnnPolicy", env,
                 verbose=1,                    # Controls the verbosity level (0: no output, 1: training information)
                 tensorboard_log=LOG_DIR,      # Directory for storing Tensorboard logs
