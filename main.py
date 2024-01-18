@@ -7,6 +7,7 @@ import os
 from stable_baselines3.common.callbacks import BaseCallback
 from gymnasium.wrappers import GrayScaleObservation, ResizeObservation
 from stable_baselines3.common.vec_env import DummyVecEnv, VecFrameStack
+from stable_baselines3.common.monitor import Monitor
 
 
 CHECKPOINT_DIR = "./train/"
@@ -102,7 +103,7 @@ def reduce_action_space(env):
 def reduce_observation_space(env):
     # https://gymnasium.farama.org/api/wrappers/
     env = GrayScaleObservation(env, keep_dim=True) # Convert the image to black and white
-    env = ResizeObservation(env, shape=(60, 64))   # Reduce the image size
+    env = ResizeObservation(env, shape=(84, 84))   # Reduce the image size
 
     return env
 
@@ -114,15 +115,17 @@ def enhance_observation_space(env):
 
 
 if __name__ == '__main__':
-    #env = gymnasium.make("ALE/SpaceInvaders-v5", render_mode='rgb_array')
-    env = gymnasium.make('ALE/SpaceInvaders-v5', render_mode="human")
+    env = gymnasium.make("ALE/SpaceInvaders-v5", render_mode='rgb_array')
+    #env = gymnasium.make('ALE/SpaceInvaders-v5', render_mode="human")
     #env = gym_super_mario_bros.make('SuperMarioBros-v0', render_mode="human")
 
     print_environment_data(env)
 
     #env = reduce_action_space(env)
+    env = Monitor(env, LOG_DIR)
     env = reduce_observation_space(env)
     env = enhance_observation_space(env)
+
 
     print_environment_data(env)
 
@@ -141,6 +144,6 @@ if __name__ == '__main__':
                 gamma=0.99                    # Discount factor for future rewards
                 )
     #test_random_actions_tutorial(env)
-    load_and_test_model(env, "./train/best_model_1000")
-    #m = train_agent(env, model, 500, 1000)
+    #load_and_test_model(env, "./train/best_model_2800000")
+    m = train_agent(env, model, 5000, 10000)
     print('Model trained')
