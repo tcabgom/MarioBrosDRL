@@ -114,36 +114,71 @@ def enhance_observation_space(env):
     return env
 
 
-if __name__ == '__main__':
-    env = gymnasium.make("ALE/SpaceInvaders-v5", render_mode='rgb_array')
-    #env = gymnasium.make('ALE/SpaceInvaders-v5', render_mode="human")
-    #env = gym_super_mario_bros.make('SuperMarioBros-v0', render_mode="human")
-
+def train_super_mario_bros(check_freq, total_timesteps):
+    env = gym_super_mario_bros.make('SuperMarioBros-v0')
     print_environment_data(env)
+    env = Monitor(env, LOG_DIR)
+    env = reduce_action_space(env)
+    env = reduce_observation_space(env)
+    env = enhance_observation_space(env)
+    print_environment_data(env)
+    model = create_DQN_model(env)
+    train_agent(env, model, check_freq, total_timesteps)
+    print('Model trained')
 
-    #env = reduce_action_space(env)
+
+def test_super_mario_bros(model_path):
+    env = gym_super_mario_bros.make('SuperMarioBros-v0')
+    print_environment_data(env)
+    env = Monitor(env, LOG_DIR)
+    env = reduce_action_space(env)
+    env = reduce_observation_space(env)
+    env = enhance_observation_space(env)
+    print_environment_data(env)
+    load_and_test_model(env, model_path)
+
+
+def train_space_invaders(check_freq, total_timesteps):
+    env = gymnasium.make("ALE/SpaceInvaders-v5", render_mode='rgb_array')
+    print_environment_data(env)
     env = Monitor(env, LOG_DIR)
     env = reduce_observation_space(env)
     env = enhance_observation_space(env)
-
-
     print_environment_data(env)
+    model = create_DQN_model(env)
+    train_agent(env, model, check_freq, total_timesteps)
+    print('Model trained')
 
-    model = DQN("CnnPolicy", env,
+
+def test_space_invaders(model_path):
+    env = gymnasium.make("ALE/SpaceInvaders-v5", render_mode='human')
+    print_environment_data(env)
+    env = Monitor(env, LOG_DIR)
+    env = reduce_observation_space(env)
+    env = enhance_observation_space(env)
+    print_environment_data(env)
+    load_and_test_model(env, model_path)
+
+
+def create_DQN_model(env):
+    return  DQN("CnnPolicy", env,
                 verbose=1,                    # Controls the verbosity level (0: no output, 1: training information)
                 tensorboard_log=LOG_DIR,      # Directory for storing Tensorboard logs
-                learning_rate=0.00001,        # The learning rate for the optimizer
-                buffer_size=50000,            # Size of the replay buffer
-                learning_starts=1000,         # Number of steps before starting to update the model
-                train_freq=4,                 # Number of steps between updates of the model
+                learning_rate=0.0001,         # The learning rate for the optimizer
+                buffer_size=300000,           # Size of the replay buffer
+                learning_starts=20000,        # Number of steps before starting to update the model
+                train_freq=2,                 # Number of steps between updates of the model
                 gradient_steps=1,             # Number of gradient steps to take per update
                 target_update_interval=10000, # Update target network every `target_update_interval` steps
                 exploration_fraction=0.05,    # Fraction of total timesteps during which exploration rate is decreased
                 exploration_final_eps=0.01,   # Final value of the exploration rate
                 max_grad_norm=10,             # Clipping of gradients during optimization
-                gamma=0.99                    # Discount factor for future rewards
+                gamma=0.999                  # Discount factor for future rewards
+                #device = "cuda:0"
                 )
-    #test_random_actions_tutorial(env)
-    #load_and_test_model(env, "./train/best_model_2800000")
-    m = train_agent(env, model, 5000, 10000)
-    print('Model trained')
+
+
+if __name__ == '__main__':
+    train_space_invaders(200000, 8000000)
+    #test_space_invaders("./train/best_model_7800000")
+
