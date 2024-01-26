@@ -161,7 +161,7 @@ def test_space_invaders(model_path):
 
 
 def create_DQN_model(env):
-    return  DQN("CnnPolicy", env,
+    return DQN("CnnPolicy", env,
                 verbose=1,                    # Controls the verbosity level (0: no output, 1: training information)
                 tensorboard_log=LOG_DIR,      # Directory for storing Tensorboard logs
                 learning_rate=0.0001,         # The learning rate for the optimizer
@@ -173,12 +173,12 @@ def create_DQN_model(env):
                 exploration_fraction=0.05,    # Fraction of total timesteps during which exploration rate is decreased
                 exploration_final_eps=0.01,   # Final value of the exploration rate
                 max_grad_norm=10,             # Clipping of gradients during optimization
-                gamma=0.999                  # Discount factor for future rewards
+                gamma=0.999                   # Discount factor for future rewards
                 #device = "cuda:0"
                 )
 
 
 if __name__ == '__main__':
-    train_space_invaders(200000, 8000000)
+    train_super_mario_bros(200000, 8000000)
     #test_space_invaders("./train/best_model_7800000")
 
