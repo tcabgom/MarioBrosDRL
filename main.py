@@ -1,13 +1,17 @@
 from nes_py.wrappers import JoypadSpace
 import gym_super_mario_bros
 import gymnasium
+#import tensorflow as tf
 from gym_super_mario_bros.actions import SIMPLE_MOVEMENT
 from stable_baselines3 import PPO, DQN
 import os
 from stable_baselines3.common.callbacks import BaseCallback
 from gymnasium.wrappers import GrayScaleObservation, ResizeObservation
+from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 from stable_baselines3.common.vec_env import DummyVecEnv, VecFrameStack
 from stable_baselines3.common.monitor import Monitor
+import pandas as pd
+import optuna
 
 
 CHECKPOINT_DIR = "./train/"
@@ -53,7 +57,7 @@ class TrainAndLoggingCallback(BaseCallback):
         return True
 
 
-def train_agent(env, model, check_freq, total_timesteps):
+def train_agent(model, check_freq, total_timesteps):
     """
     Trains the given environment with the given model
 
@@ -81,7 +85,7 @@ def load_and_test_model(env, model_path):
     model = DQN.load(model_path, env=env)
     vec_env = model.get_env()
     observation = vec_env.reset()
-    for step in range(5000):
+    for step in range(15000):
         action, _state = model.predict(observation)
         observation, reward, done, info = vec_env.step(action)
         env.render()
@@ -123,12 +127,12 @@ def train_super_mario_bros(check_freq, total_timesteps):
     env = enhance_observation_space(env)
     print_environment_data(env)
     model = create_DQN_model(env)
-    train_agent(env, model, check_freq, total_timesteps)
+    train_agent(model, check_freq, total_timesteps)
     print('Model trained')
 
 
 def test_super_mario_bros(model_path):
-    env = gym_super_mario_bros.make('SuperMarioBros-v0')
+    env = gym_super_mario_bros.make('SuperMarioBros-v0', render_mode="human")
     print_environment_data(env)
     env = Monitor(env, LOG_DIR)
     env = reduce_action_space(env)
@@ -146,7 +150,7 @@ def train_space_invaders(check_freq, total_timesteps):
     env = enhance_observation_space(env)
     print_environment_data(env)
     model = create_DQN_model(env)
-    train_agent(env, model, check_freq, total_timesteps)
+    train_agent(model, check_freq, total_timesteps)
     print('Model trained')
 
 
@@ -159,26 +163,82 @@ def test_space_invaders(model_path):
     print_environment_data(env)
     load_and_test_model(env, model_path)
 
+'''
+class CustomCnnPolicy(tf.keras.Model, BaseFeaturesExtractor):
+    def __init__(self, observation_space, action_space, net_arch=None, features_dim=256, **kwargs):
+        super(CustomCnnPolicy, self).__init__()
 
-def create_DQN_model(env):
+        # La arquitectura es esta cosa. Que es el parametro activation???
+        self.features_extractor = tf.keras.Sequential([
+            tf.keras.layers.Conv2D(32, (8, 8), strides=(4, 4), activation='relu'),
+            tf.keras.layers.Conv2D(64, (4, 4), strides=(2, 2), activation='relu'),
+            tf.keras.layers.Conv2D(64, (3, 3), activation='relu'),
+            tf.keras.layers.Flatten()
+        ])
+
+        self.critic = tf.keras.layers.Dense(action_space.n, activation='linear')
+
+    def forward(self, observations):
+        features = self.features_extractor(observations)
+        return self.critic(features)
+'''
+
+
+def objective(trial):
+    # https://optuna.org/
+
+    env = gymnasium.make("ALE/SpaceInvaders-v5", render_mode='rgb_array')
+    print_environment_data(env)
+    env = Monitor(env, LOG_DIR)
+    env = reduce_observation_space(env)
+    env = enhance_observation_space(env)
+
+    exploration_final_eps = trial.suggest_float('exploration_final_eps', 0.005, 0.1)
+    learning_rate = trial.suggest_float('learning_rate', 0.000001, 0.01)
+    train_frequency = trial.suggest_int('train_frequency', 2, 10)
+    buffer_size = trial.suggest_int('buffer_size', 10000, 500000)
+    gamma = trial.suggest_float('gamma', 0.9, 0.9999)
+
+    model = create_DQN_model(env, exploration_final_eps, learning_rate, train_frequency, buffer_size, gamma)
+    callback = TrainAndLoggingCallback(check_freq=250000, save_path=CHECKPOINT_DIR)
+    model.learn(total_timesteps=3000000, callback=callback)
+    return -callback.current_best_info_mean['r']
+
+
+def create_DQN_model(env,
+                     exploration_final_eps,
+                     learning_rate,
+                     train_frequency,
+                     buffer_size,
+                     gamma):
     return DQN("CnnPolicy", env,
-                verbose=1,                    # Controls the verbosity level (0: no output, 1: training information)
-                tensorboard_log=LOG_DIR,      # Directory for storing Tensorboard logs
-                learning_rate=0.0001,         # The learning rate for the optimizer
-                buffer_size=300000,           # Size of the replay buffer
-                learning_starts=20000,        # Number of steps before starting to update the model
-                train_freq=2,                 # Number of steps between updates of the model
-                gradient_steps=1,             # Number of gradient steps to take per update
-                target_update_interval=10000, # Update target network every `target_update_interval` steps
-                exploration_fraction=0.05,    # Fraction of total timesteps during which exploration rate is decreased
-                exploration_final_eps=0.01,   # Final value of the exploration rate
-                max_grad_norm=10,             # Clipping of gradients during optimization
-                gamma=0.999                   # Discount factor for future rewards
+                verbose=1,                                      # Controls the verbosity level (0: no output, 1: training information)
+                tensorboard_log=LOG_DIR,                        # Directory for storing Tensorboard logs
+                learning_rate=learning_rate,                    # The learning rate for the optimizer
+                buffer_size=buffer_size,                        # Size of the replay buffer
+                learning_starts=20000,                          # Number of steps before starting to update the model
+                train_freq=train_frequency,                     # Number of steps between updates of the model
+                gradient_steps=1,                               # Number of gradient steps to take per update
+                target_update_interval=10000,                   # Update target network every `target_update_interval` steps
+                exploration_fraction=0.05,                      # Fraction of total timesteps during which exploration rate is decreased
+                exploration_final_eps=exploration_final_eps,    # Final value of the exploration rate
+                max_grad_norm=10,                               # Clipping of gradients during optimization
+                gamma=gamma                                     # Discount factor for future rewards
                 #device = "cuda:0"
                 )
 
 
+def search_hyperparameters_optuna():
+    study = optuna.create_study(direction='maximize')
+    study.optimize(objective, n_trials=15)
+    print('### TRIALS COMPLETE ###')
+    trial = study.best_trial
+    print('Best Value: ', trial.value)
+    print('Best Params: ')
+    for key, value in trial.params.items():
+        print(f'    {key}: {value}')
+
+
 if __name__ == '__main__':
-    train_super_mario_bros(200000, 8000000)
-    #test_space_invaders("./train/best_model_7800000")
+    search_hyperparameters_optuna()
 
