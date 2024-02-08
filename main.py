@@ -11,6 +11,7 @@ from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 from stable_baselines3.common.vec_env import DummyVecEnv, VecFrameStack
 from stable_baselines3.common.monitor import Monitor
 import pandas as pd
+import numpy as np
 import optuna
 
 
@@ -41,10 +42,13 @@ def test_random_actions_tutorial(env):
 
 
 class TrainAndLoggingCallback(BaseCallback):
-    def __init__(self, check_freq, save_path, verbose=1):
+    def __init__(self, check_freq, save_path, verbose=1, mean_reward_window=100):
         super(TrainAndLoggingCallback, self).__init__(verbose)
         self.check_freq = check_freq
         self.save_path = save_path
+        self.mean_reward_window = mean_reward_window
+        self.episode_rewards = []
+        self.current_best_info_mean = {'r': float('-inf')}  # Initialize with negative infinity
 
     def _init_callback(self):
         if self.save_path is not None:
@@ -54,7 +58,16 @@ class TrainAndLoggingCallback(BaseCallback):
         if self.n_calls % self.check_freq == 0:
             model_path = os.path.join(self.save_path, "best_model_{}".format(self.n_calls))
             self.model.save(model_path)
+            mean_reward = np.mean(self.episode_rewards[-self.mean_reward_window:])
+            if mean_reward > self.current_best_info_mean['r']:
+                self.current_best_info_mean['r'] = mean_reward
         return True
+
+    def _on_episode_end(self):
+        self.episode_rewards.append(self.model.ep_info_buffer[0]['r'])
+        if len(self.episode_rewards) > 1000:
+            self.episode_rewards = self.episode_rewards[-self.mean_reward_window:]
+
 
 
 def train_agent(model, check_freq, total_timesteps):
@@ -120,6 +133,7 @@ def enhance_observation_space(env):
 
 def train_super_mario_bros(check_freq, total_timesteps):
     env = gym_super_mario_bros.make('SuperMarioBros-v0')
+    env = CustomRewardWrapper(env)
     print_environment_data(env)
     env = Monitor(env, LOG_DIR)
     env = reduce_action_space(env)
@@ -205,7 +219,24 @@ def objective(trial):
     return -callback.current_best_info_mean['r']
 
 
-def create_DQN_model(env,
+def create_DQN_model(env):
+    return DQN("CnnPolicy", env,
+                verbose=1,                     # Controls the verbosity level (0: no output, 1: training information)
+                tensorboard_log=LOG_DIR,       # Directory for storing Tensorboard logs
+                learning_rate = 0.01,          # The learning rate for the optimizer
+                buffer_size=100000,            # Size of the replay buffer
+                learning_starts=20000,         # Number of steps before starting to update the model
+                train_freq=2,                  # Number of steps between updates of the model
+                gradient_steps=1,              # Number of gradient steps to take per update
+                target_update_interval=10000,  # Update target network every `target_update_interval` steps
+                exploration_fraction=0.05,     # Fraction of total timesteps during which exploration rate is decreased
+                exploration_final_eps=0.01,    # Final value of the exploration rate
+                max_grad_norm=10,              # Clipping of gradients during optimization
+                gamma=0.99                     # Discount factor for future rewards
+                #device = "cuda:0"
+                )
+
+def create_custom_DQN_model(env,
                      exploration_final_eps,
                      learning_rate,
                      train_frequency,
@@ -239,6 +270,60 @@ def search_hyperparameters_optuna():
         print(f'    {key}: {value}')
 
 
-if __name__ == '__main__':
-    search_hyperparameters_optuna()
+class CustomRewardWrapper(gymnasium.Wrapper):
+    def __init__(self, env):
+        super(CustomRewardWrapper, self).__init__(env)
+        self.x_position_last = 0
+        self.time_last = 0
 
+    def get_x_position(self):
+        return self.ram[0x6d] * 0x100 + self.ram[0x86]
+
+    def get_x_reward(self):
+        _reward = self.get_x_position() - self.x_position_last
+        self.x_position_last = self.get_x_position()
+        if _reward < -5 or _reward > 5:
+            return 0
+        print(_reward)
+        return _reward
+
+    def read_mem_range(self, address, length):
+        return int(''.join(map(str, self.ram[address:address + length])))
+
+    def get_time(self):
+        return self.read_mem_range(0x07f8, 3)
+
+    def get_time_penalty(self):
+        _reward = self.get_time() - self.time_last
+        self.time_last = self.get_time()
+        return _reward
+
+    def player_state(self):
+        return self.ram[0x000e]
+
+    def y_viewport(self):
+        return self.ram[0x00b5]
+
+    def is_dying(self):
+        return self.player_state() == 0x0b or self.y_viewport() > 1
+
+    def is_dead(self):
+        return self.player_state() == 0x06
+
+    def get_death_penalty(self):
+        if self.is_dying() or self.is_dead():
+            return -25
+        return 0
+
+    def custom_reward(self):
+        return (4/9)*self.get_x_reward() + (1/9)*self.get_time_penalty() + (4/9)*self.get_death_penalty()
+
+    def step(self, action):
+        observation, _, terminated, truncated, info = self.env.step(action)
+        custom_reward = self.custom_reward()
+        return observation, custom_reward, terminated, truncated, info
+
+
+
+if __name__ == '__main__':
+    train_super_mario_bros(200000,8000000)
