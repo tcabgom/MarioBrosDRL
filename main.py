@@ -182,7 +182,6 @@ class CustomCnnPolicy(tf.keras.Model, BaseFeaturesExtractor):
     def __init__(self, observation_space, action_space, net_arch=None, features_dim=256, **kwargs):
         super(CustomCnnPolicy, self).__init__()
 
-        # La arquitectura es esta cosa. Que es el parametro activation???
         self.features_extractor = tf.keras.Sequential([
             tf.keras.layers.Conv2D(32, (8, 8), strides=(4, 4), activation='relu'),
             tf.keras.layers.Conv2D(64, (4, 4), strides=(2, 2), activation='relu'),
@@ -213,7 +212,7 @@ def objective(trial):
     buffer_size = trial.suggest_int('buffer_size', 10000, 500000)
     gamma = trial.suggest_float('gamma', 0.9, 0.9999)
 
-    model = create_DQN_model(env, exploration_final_eps, learning_rate, train_frequency, buffer_size, gamma)
+    model = create_custom_DQN_model(env, exploration_final_eps, learning_rate, train_frequency, buffer_size, gamma)
     callback = TrainAndLoggingCallback(check_freq=250000, save_path=CHECKPOINT_DIR)
     model.learn(total_timesteps=3000000, callback=callback)
     return -callback.current_best_info_mean['r']
@@ -284,7 +283,6 @@ class CustomRewardWrapper(gymnasium.Wrapper):
         self.x_position_last = self.get_x_position()
         if _reward < -5 or _reward > 5:
             return 0
-        print(_reward)
         return _reward
 
     def read_mem_range(self, address, length):
@@ -316,7 +314,7 @@ class CustomRewardWrapper(gymnasium.Wrapper):
         return 0
 
     def custom_reward(self):
-        return (4/9)*self.get_x_reward() + (1/9)*self.get_time_penalty() + (4/9)*self.get_death_penalty()
+        return self.get_x_reward() * (self.get_time()/100) + 100*self.get_death_penalty()
 
     def step(self, action):
         observation, _, terminated, truncated, info = self.env.step(action)
@@ -326,4 +324,6 @@ class CustomRewardWrapper(gymnasium.Wrapper):
 
 
 if __name__ == '__main__':
-    train_super_mario_bros(200000,8000000)
+    #train_super_mario_bros(200000,8000000)
+    #test_super_mario_bros("train/best_model_6800000.zip")
+    search_hyperparameters_optuna()
