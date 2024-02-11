@@ -1,3 +1,4 @@
+import gc
 from nes_py.wrappers import JoypadSpace
 import gym_super_mario_bros
 import gymnasium
@@ -199,23 +200,27 @@ class CustomCnnPolicy(tf.keras.Model, BaseFeaturesExtractor):
 
 def objective(trial):
     # https://optuna.org/
+    try:
+        env = gymnasium.make("ALE/SpaceInvaders-v5", render_mode='rgb_array')
+        print_environment_data(env)
+        env = Monitor(env, LOG_DIR)
+        env = reduce_observation_space(env)
+        env = enhance_observation_space(env)
 
-    env = gymnasium.make("ALE/SpaceInvaders-v5", render_mode='rgb_array')
-    print_environment_data(env)
-    env = Monitor(env, LOG_DIR)
-    env = reduce_observation_space(env)
-    env = enhance_observation_space(env)
+        exploration_final_eps = trial.suggest_float('exploration_final_eps', 0.005, 0.1)
+        learning_rate = trial.suggest_float('learning_rate', 0.000001, 0.01)
+        train_frequency = trial.suggest_int('train_frequency', 2, 10)
+        buffer_size = trial.suggest_int('buffer_size', 10000, 500000)
+        gamma = trial.suggest_float('gamma', 0.9, 0.9999)
 
-    exploration_final_eps = trial.suggest_float('exploration_final_eps', 0.005, 0.1)
-    learning_rate = trial.suggest_float('learning_rate', 0.000001, 0.01)
-    train_frequency = trial.suggest_int('train_frequency', 2, 10)
-    buffer_size = trial.suggest_int('buffer_size', 10000, 500000)
-    gamma = trial.suggest_float('gamma', 0.9, 0.9999)
-
-    model = create_custom_DQN_model(env, exploration_final_eps, learning_rate, train_frequency, buffer_size, gamma)
-    callback = TrainAndLoggingCallback(check_freq=250000, save_path=CHECKPOINT_DIR)
-    model.learn(total_timesteps=3000000, callback=callback)
-    return -callback.current_best_info_mean['r']
+        model = create_custom_DQN_model(env, exploration_final_eps, learning_rate, train_frequency, buffer_size, gamma)
+        callback = TrainAndLoggingCallback(check_freq=250000, save_path=CHECKPOINT_DIR)
+        model.learn(total_timesteps=3000000, callback=callback)
+        return -callback.current_best_info_mean['r']
+    finally:
+        del env
+        del model
+        gc.collect()
 
 
 def create_DQN_model(env):
@@ -313,7 +318,10 @@ class CustomRewardWrapper(gymnasium.Wrapper):
             return -25
         return 0
 
-    def custom_reward(self):
+    def custom_reward_1(self):
+        return (4/9)*self.get_x_reward() + (1/9)*self.get_time_penalty() + (4/9)*self.get_death_penalty()
+
+    def custom_reward_2(self):
         return self.get_x_reward() * (self.get_time()/100) + 100*self.get_death_penalty()
 
     def step(self, action):
@@ -325,5 +333,6 @@ class CustomRewardWrapper(gymnasium.Wrapper):
 
 if __name__ == '__main__':
     #train_super_mario_bros(200000,8000000)
-    #test_super_mario_bros("train/best_model_6800000.zip")
-    search_hyperparameters_optuna()
+    #train_space_invaders(200000, 8000000)
+    test_super_mario_bros("train/best_model_8000000.zip")
+    #search_hyperparameters_optuna()
