@@ -2,7 +2,7 @@ import gc
 from nes_py.wrappers import JoypadSpace
 import gym_super_mario_bros
 import gymnasium
-#import tensorflow as tf
+import tensorflow as tf
 from gym_super_mario_bros.actions import SIMPLE_MOVEMENT
 from stable_baselines3 import PPO, DQN
 import os
@@ -14,6 +14,7 @@ from stable_baselines3.common.monitor import Monitor
 import pandas as pd
 import numpy as np
 import optuna
+import torch
 
 
 CHECKPOINT_DIR = "./train/"
@@ -43,13 +44,19 @@ def test_random_actions_tutorial(env):
 
 
 class TrainAndLoggingCallback(BaseCallback):
-    def __init__(self, check_freq, save_path, verbose=1, mean_reward_window=100):
+
+    def __init__(self, save_path, model_name, check_freq=5000, save_freq_best=100000, save_freq_force=200000,
+                 verbose=1):
         super(TrainAndLoggingCallback, self).__init__(verbose)
         self.check_freq = check_freq
+        self.save_freq_best = save_freq_best
+        self.save_freq_force = save_freq_force
         self.save_path = save_path
-        self.mean_reward_window = mean_reward_window
-        self.episode_rewards = []
-        self.current_best_info_mean = {'r': float('-inf')}  # Initialize with negative infinity
+        self.model_name = model_name
+        self.current_best_info_mean = {'r': -np.inf, 'l': 0, 't': 0}
+        self.current_best_model = None
+        self.current_best_n_calls = None
+        self.current_best_changed = False
 
     def _init_callback(self):
         if self.save_path is not None:
@@ -57,17 +64,37 @@ class TrainAndLoggingCallback(BaseCallback):
 
     def _on_step(self):
         if self.n_calls % self.check_freq == 0:
-            model_path = os.path.join(self.save_path, "best_model_{}".format(self.n_calls))
-            self.model.save(model_path)
-            mean_reward = np.mean(self.episode_rewards[-self.mean_reward_window:])
-            if mean_reward > self.current_best_info_mean['r']:
-                self.current_best_info_mean['r'] = mean_reward
-        return True
+            if self.model.ep_info_buffer:
+                df = pd.DataFrame(self.model.ep_info_buffer)
+                info_mean = df.mean()
+                if info_mean['r'] > self.current_best_info_mean['r']:
+                    model_path = os.path.join(self.save_path, "best_model_tmp")
+                    self.model.save(model_path)
+                    self.current_best_info_mean = info_mean
+                    self.current_best_changed = True
+                    self.current_best_n_calls = self.n_calls
+                    # print('new best model {}'.format(self.current_best_info_mean))
 
-    def _on_episode_end(self):
-        self.episode_rewards.append(self.model.ep_info_buffer[0]['r'])
-        if len(self.episode_rewards) > 1000:
-            self.episode_rewards = self.episode_rewards[-self.mean_reward_window:]
+        if self.n_calls % self.save_freq_best == 0 and self.current_best_changed:
+            model_path = os.path.join(self.save_path, '{}_BEST_{}_{:.2f}_{:.2f}_{:.2f}'
+                                      .format(self.model_name, self.n_calls, self.current_best_info_mean['r'],
+                                              self.current_best_info_mean['l'], self.current_best_info_mean['t'])
+                                      .replace('.', '-'))
+            print('Saving new BEST model to {}'.format(model_path))
+            self.model.save(model_path)
+            self.current_best_changed = False
+
+        if self.n_calls % self.save_freq_force == 0:
+            if self.model.ep_info_buffer:
+                df = pd.DataFrame(self.model.ep_info_buffer)
+                info_mean = df.mean()
+                model_path = os.path.join(self.save_path, '{}_PERIODIC_{}_{:.2f}_{:.2f}_{:.2f}'
+                                          .format(self.model_name, self.n_calls, info_mean['r'],
+                                                  info_mean['l'], info_mean['t'])
+                                          .replace('.', '-'))
+                print('Saving PERIODIC model to {}'.format(model_path))
+                self.model.save(model_path)
+        return True
 
 
 
@@ -178,49 +205,41 @@ def test_space_invaders(model_path):
     print_environment_data(env)
     load_and_test_model(env, model_path)
 
-'''
-class CustomCnnPolicy(tf.keras.Model, BaseFeaturesExtractor):
-    def __init__(self, observation_space, action_space, net_arch=None, features_dim=256, **kwargs):
-        super(CustomCnnPolicy, self).__init__()
 
-        self.features_extractor = tf.keras.Sequential([
-            tf.keras.layers.Conv2D(32, (8, 8), strides=(4, 4), activation='relu'),
-            tf.keras.layers.Conv2D(64, (4, 4), strides=(2, 2), activation='relu'),
-            tf.keras.layers.Conv2D(64, (3, 3), activation='relu'),
-            tf.keras.layers.Flatten()
-        ])
+def objective_aux(trial):
+    # https://optuna.org/
 
-        self.critic = tf.keras.layers.Dense(action_space.n, activation='linear')
+    env = gymnasium.make("ALE/SpaceInvaders-v5", render_mode='rgb_array')
+    print_environment_data(env)
+    env = Monitor(env, LOG_DIR)
+    env = reduce_observation_space(env)
+    env = enhance_observation_space(env)
 
-    def forward(self, observations):
-        features = self.features_extractor(observations)
-        return self.critic(features)
-'''
+    exploration_final_eps = trial.suggest_float('exploration_final_eps', 0.005, 0.1)
+    learning_rate = trial.suggest_float('learning_rate', 0.000001, 0.01)
+    train_frequency = trial.suggest_int('train_frequency', 2, 10)
+    buffer_size = trial.suggest_int('buffer_size', 400000, 500000)
+    gamma = trial.suggest_float('gamma', 0.9, 0.9999)
+
+    model = create_custom_DQN_model(env, exploration_final_eps, learning_rate, train_frequency, buffer_size, gamma)
+    print(exploration_final_eps, learning_rate, train_frequency, buffer_size, gamma)
+    callback = TrainAndLoggingCallback(save_path=CHECKPOINT_DIR, model_name='dqn_optuna_1', check_freq=1000,
+                                       save_freq_best=50000, save_freq_force=250000)
+    model.learn(total_timesteps=200000, callback=callback)
+
+    ret = float(callback.current_best_info_mean['r'])
+    torch.cuda.empty_cache()
+    del callback
+    del env
+    del model
+    return ret
 
 
 def objective(trial):
-    # https://optuna.org/
-    try:
-        env = gymnasium.make("ALE/SpaceInvaders-v5", render_mode='rgb_array')
-        print_environment_data(env)
-        env = Monitor(env, LOG_DIR)
-        env = reduce_observation_space(env)
-        env = enhance_observation_space(env)
+    ret = objective_aux(trial)
+    gc.collect()
+    return ret
 
-        exploration_final_eps = trial.suggest_float('exploration_final_eps', 0.005, 0.1)
-        learning_rate = trial.suggest_float('learning_rate', 0.000001, 0.01)
-        train_frequency = trial.suggest_int('train_frequency', 2, 10)
-        buffer_size = trial.suggest_int('buffer_size', 10000, 500000)
-        gamma = trial.suggest_float('gamma', 0.9, 0.9999)
-
-        model = create_custom_DQN_model(env, exploration_final_eps, learning_rate, train_frequency, buffer_size, gamma)
-        callback = TrainAndLoggingCallback(check_freq=250000, save_path=CHECKPOINT_DIR)
-        model.learn(total_timesteps=3000000, callback=callback)
-        return -callback.current_best_info_mean['r']
-    finally:
-        del env
-        del model
-        gc.collect()
 
 
 def create_DQN_model(env):
@@ -334,5 +353,5 @@ class CustomRewardWrapper(gymnasium.Wrapper):
 if __name__ == '__main__':
     #train_super_mario_bros(200000,8000000)
     #train_space_invaders(200000, 8000000)
-    test_super_mario_bros("train/best_model_8000000.zip")
-    #search_hyperparameters_optuna()
+    #test_super_mario_bros("train/best_model_8000000.zip")
+    search_hyperparameters_optuna()
