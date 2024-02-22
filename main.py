@@ -248,8 +248,8 @@ def objective_aux(trial):
     model = create_custom_DQN_model(env, exploration_final_eps, learning_rate, train_frequency, buffer_size, gamma)
     print(exploration_final_eps, learning_rate, train_frequency, buffer_size, gamma)
     callback = TrainAndLoggingCallback(save_path=CHECKPOINT_DIR, model_name='dqn_optuna_1', check_freq=1000,
-                                       save_freq_best=2000000, save_freq_force=1000000)
-    model.learn(total_timesteps=2050000, callback=callback)
+                                       save_freq_best=750000, save_freq_force=500000)
+    model.learn(total_timesteps=1500000, callback=callback)
 
     ret = float(callback.current_best_info_mean['r'])
     torch.cuda.empty_cache()
