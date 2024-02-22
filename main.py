@@ -2,7 +2,6 @@ import gc
 from nes_py.wrappers import JoypadSpace
 import gym_super_mario_bros
 import gymnasium
-import tensorflow as tf
 from gym_super_mario_bros.actions import SIMPLE_MOVEMENT
 from stable_baselines3 import PPO, DQN
 import os
@@ -15,6 +14,7 @@ import pandas as pd
 import numpy as np
 import optuna
 import torch
+import json
 
 
 CHECKPOINT_DIR = "./train/"
@@ -173,6 +173,20 @@ def train_super_mario_bros(check_freq, total_timesteps):
     print('Model trained')
 
 
+def train_super_mario_bros2(check_freq, total_timesteps):
+    env = gym_super_mario_bros.make('SuperMarioBros-v0')
+    env = CustomRewardWrapper(env)
+    print_environment_data(env)
+    env = Monitor(env, LOG_DIR)
+    env = reduce_action_space(env)
+    env = reduce_observation_space(env)
+    env = enhance_observation_space(env)
+    print_environment_data(env)
+    model = create_custom_DQN_model()
+    train_agent(model, check_freq, total_timesteps)
+    print('Model trained')
+
+
 def test_super_mario_bros(model_path):
     env = gym_super_mario_bros.make('SuperMarioBros-v0', render_mode="human")
     print_environment_data(env)
@@ -215,17 +229,27 @@ def objective_aux(trial):
     env = reduce_observation_space(env)
     env = enhance_observation_space(env)
 
-    exploration_final_eps = trial.suggest_float('exploration_final_eps', 0.005, 0.1)
+    exploration_final_eps = trial.suggest_float('exploration_final_eps', 0.005, 0.01)
     learning_rate = trial.suggest_float('learning_rate', 0.000001, 0.01)
     train_frequency = trial.suggest_int('train_frequency', 2, 10)
-    buffer_size = trial.suggest_int('buffer_size', 400000, 500000)
-    gamma = trial.suggest_float('gamma', 0.9, 0.9999)
+    buffer_size = trial.suggest_int('buffer_size', 400000, 600000)
+    gamma = trial.suggest_float('gamma', 0.9, 0.999)
+
+    hyperparams = {
+        'exploration_final_eps': exploration_final_eps,
+        'learning_rate': learning_rate,
+        'train_frequency': train_frequency,
+        'buffer_size': buffer_size,
+        'gamma': gamma
+    }
+    with open(f"{CHECKPOINT_DIR}/hyperparams_trial_{trial.number}.json", 'w') as f:
+        json.dump(hyperparams, f)
 
     model = create_custom_DQN_model(env, exploration_final_eps, learning_rate, train_frequency, buffer_size, gamma)
     print(exploration_final_eps, learning_rate, train_frequency, buffer_size, gamma)
     callback = TrainAndLoggingCallback(save_path=CHECKPOINT_DIR, model_name='dqn_optuna_1', check_freq=1000,
-                                       save_freq_best=50000, save_freq_force=250000)
-    model.learn(total_timesteps=200000, callback=callback)
+                                       save_freq_best=2000000, save_freq_force=1000000)
+    model.learn(total_timesteps=2050000, callback=callback)
 
     ret = float(callback.current_best_info_mean['r'])
     torch.cuda.empty_cache()
@@ -284,7 +308,8 @@ def create_custom_DQN_model(env,
 
 def search_hyperparameters_optuna():
     study = optuna.create_study(direction='maximize')
-    study.optimize(objective, n_trials=15)
+    results = []
+    study.optimize(objective, n_trials=30)
     print('### TRIALS COMPLETE ###')
     trial = study.best_trial
     print('Best Value: ', trial.value)
@@ -351,7 +376,8 @@ class CustomRewardWrapper(gymnasium.Wrapper):
 
 
 if __name__ == '__main__':
+    #train_super_mario_bros2(200000,8000000)
     #train_super_mario_bros(200000,8000000)
     #train_space_invaders(200000, 8000000)
-    #test_super_mario_bros("train/best_model_8000000.zip")
+    #test_space_invaders("train/dqn_optuna_1_PERIODIC_2000000_402-10_579-97_4251-38.zip")
     search_hyperparameters_optuna()
