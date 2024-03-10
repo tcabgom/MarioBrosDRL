@@ -3,7 +3,7 @@ from nes_py.wrappers import JoypadSpace
 import gym_super_mario_bros
 import gymnasium
 from gym_super_mario_bros.actions import SIMPLE_MOVEMENT
-from stable_baselines3 import PPO, DQN
+from stable_baselines3 import PPO, DQN, A2C
 import os
 from stable_baselines3.common.callbacks import BaseCallback
 from gymnasium.wrappers import GrayScaleObservation, ResizeObservation
@@ -111,7 +111,7 @@ def train_agent(model, check_freq, total_timesteps):
     Returns:
         model: The model after all iterations of the training
     """
-    callback = TrainAndLoggingCallback(check_freq=check_freq, save_path=CHECKPOINT_DIR)
+    callback = TrainAndLoggingCallback(check_freq=check_freq, save_path=CHECKPOINT_DIR, model_name="train")
     model.learn(total_timesteps=total_timesteps, callback=callback)
 
     return model
@@ -205,7 +205,8 @@ def train_space_invaders(check_freq, total_timesteps):
     env = reduce_observation_space(env)
     env = enhance_observation_space(env)
     print_environment_data(env)
-    model = create_DQN_model(env)
+    model = create_A2C_model(env)
+    #model = create_DQN_model(env)
     train_agent(model, check_freq, total_timesteps)
     print('Model trained')
 
@@ -264,6 +265,18 @@ def objective(trial):
     gc.collect()
     return ret
 
+
+def create_A2C_model(env):
+    # https://stable-baselines.readthedocs.io/en/master/modules/a2c.html
+    return A2C("CnnPolicy", env,
+               verbose=1,                # Controls the verbosity level (0: no output, 1: training information)
+               tensorboard_log=LOG_DIR,  # Directory for storing Tensorboard logs
+               learning_rate=0.01,       # The learning rate for the optimizer
+               gamma=0.99,               # Discount factor for future rewards
+               ent_coef=0.01,            # Entropy coefficient for the loss calculation
+               n_steps=5                # Number of steps to run for each environment per update
+              # model_name= "A2C",        # Model name
+               )
 
 
 def create_DQN_model(env):
@@ -378,6 +391,6 @@ class CustomRewardWrapper(gymnasium.Wrapper):
 if __name__ == '__main__':
     #train_super_mario_bros2(200000,8000000)
     #train_super_mario_bros(200000,8000000)
-    #train_space_invaders(200000, 8000000)
-    #test_space_invaders("train/dqn_optuna_1_PERIODIC_2000000_402-10_579-97_4251-38.zip")
-    search_hyperparameters_optuna()
+    train_space_invaders(200000, 8000000)
+    #test_space_invaders("train/dqn_optuna_1_BEST_1500000_308-95_676-02_9376-08.zip")
+    #search_hyperparameters_optuna()
