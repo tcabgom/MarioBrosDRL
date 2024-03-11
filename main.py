@@ -205,8 +205,8 @@ def train_space_invaders(check_freq, total_timesteps):
     env = reduce_observation_space(env)
     env = enhance_observation_space(env)
     print_environment_data(env)
-    model = create_A2C_model(env)
-    #model = create_DQN_model(env)
+    #model = create_A2C_model(env)
+    model = create_DQN_model(env)
     train_agent(model, check_freq, total_timesteps)
     print('Model trained')
 
@@ -229,27 +229,27 @@ def objective_aux(trial):
     env = Monitor(env, LOG_DIR)
     env = reduce_observation_space(env)
     env = enhance_observation_space(env)
-
+    print_environment_data(env)
     exploration_final_eps = trial.suggest_float('exploration_final_eps', 0.005, 0.01)
-    learning_rate = trial.suggest_float('learning_rate', 0.000001, 0.01)
-    train_frequency = trial.suggest_int('train_frequency', 2, 10)
-    buffer_size = trial.suggest_int('buffer_size', 400000, 600000)
-    gamma = trial.suggest_float('gamma', 0.9, 0.999)
+    learning_rate = trial.suggest_float('learning_rate', 0.0001, 0.01)
+    train_frequency = trial.suggest_int('train_frequency', 2, 6)
+    buffer_size = trial.suggest_int('buffer_size', 600000, 1000000)
+    # gamma = trial.suggest_float('gamma', 0.95, 0.95)
 
     hyperparams = {
         'exploration_final_eps': exploration_final_eps,
         'learning_rate': learning_rate,
         'train_frequency': train_frequency,
         'buffer_size': buffer_size,
-        'gamma': gamma
+        'gamma': 0.95                                       # Parametro optimo
     }
     with open(f"{CHECKPOINT_DIR}/hyperparams_trial_{trial.number}.json", 'w') as f:
         json.dump(hyperparams, f)
 
-    model = create_custom_DQN_model(env, exploration_final_eps, learning_rate, train_frequency, buffer_size, gamma)
-    print(exploration_final_eps, learning_rate, train_frequency, buffer_size, gamma)
-    callback = TrainAndLoggingCallback(save_path=CHECKPOINT_DIR, model_name='dqn_optuna_1', check_freq=1000,
-                                       save_freq_best=750000, save_freq_force=500000)
+    model = create_custom_DQN_model(env, exploration_final_eps, learning_rate, train_frequency, buffer_size, 0.95)
+    print(exploration_final_eps, learning_rate, train_frequency, buffer_size, 0.95)
+    callback = TrainAndLoggingCallback(save_path=CHECKPOINT_DIR, model_name='dqn_optuna_3', check_freq=1000,
+                                       save_freq_best=750000, save_freq_force=750000)
     model.learn(total_timesteps=1500000, callback=callback)
 
     ret = float(callback.current_best_info_mean['r'])
@@ -275,7 +275,7 @@ def create_A2C_model(env):
                gamma=0.99,               # Discount factor for future rewards
                ent_coef=0.01,            # Entropy coefficient for the loss calculation
                n_steps=5                # Number of steps to run for each environment per update
-              # model_name= "A2C",        # Model name
+               # model_name= "A2C",        # Model name
                )
 
 
@@ -322,7 +322,7 @@ def create_custom_DQN_model(env,
 def search_hyperparameters_optuna():
     study = optuna.create_study(direction='maximize')
     results = []
-    study.optimize(objective, n_trials=30)
+    study.optimize(objective, n_trials=50)
     print('### TRIALS COMPLETE ###')
     trial = study.best_trial
     print('Best Value: ', trial.value)
@@ -391,6 +391,6 @@ class CustomRewardWrapper(gymnasium.Wrapper):
 if __name__ == '__main__':
     #train_super_mario_bros2(200000,8000000)
     #train_super_mario_bros(200000,8000000)
-    train_space_invaders(200000, 8000000)
+    #train_space_invaders(200000, 8000000)
     #test_space_invaders("train/dqn_optuna_1_BEST_1500000_308-95_676-02_9376-08.zip")
-    #search_hyperparameters_optuna()
+    search_hyperparameters_optuna()
