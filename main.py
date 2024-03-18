@@ -395,6 +395,6 @@ class CustomRewardWrapper(gymnasium.Wrapper):
 if __name__ == '__main__':
     #train_super_mario_bros2(200000,8000000)
     #train_super_mario_bros(200000,8000000)
-    #train_space_invaders(200000, 8000000)
-    test_space_invaders("train/dqn_optuna_1_BEST_1500000_308-95_676-02_9376-08.zip")
+    train_space_invaders(200000, 1000000)
+    #test_space_invaders("train/dqn_optuna_1_BEST_1500000_308-95_676-02_9376-08.zip")
     #search_hyperparameters_optuna()
