@@ -3,22 +3,21 @@ from nes_py.wrappers import JoypadSpace
 import gym_super_mario_bros
 import gymnasium
 from gym_super_mario_bros.actions import SIMPLE_MOVEMENT
-from stable_baselines3 import PPO, DQN, A2C
+from stable_baselines3 import DQN, A2C
 import os
 from stable_baselines3.common.callbacks import BaseCallback
 from gymnasium.wrappers import GrayScaleObservation, ResizeObservation
-from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 from stable_baselines3.common.vec_env import DummyVecEnv, VecFrameStack
 from stable_baselines3.common.monitor import Monitor
 import pandas as pd
 import numpy as np
-import optuna
+from src.experiments import optuna
 import torch
 import json
 
 
-CHECKPOINT_DIR = "./train/"
-LOG_DIR = "./logs/"
+CHECKPOINT_DIR = "../../train/"
+LOG_DIR = "../../logs/"
 
 
 def test_random_actions_tutorial(env):
@@ -154,14 +153,13 @@ def reduce_observation_space(env):
 
 
 def enhance_observation_space(env):
-    env = DummyVecEnv([lambda: env])     #
+    env = DummyVecEnv([lambda: env])
     env = VecFrameStack(env, n_stack=4)  # Stacking frames to let the model recognize speed
     return env
 
 
 def train_super_mario_bros(check_freq, total_timesteps):
     env = gym_super_mario_bros.make('SuperMarioBros-v0')
-    env = CustomRewardWrapper(env)
     print_environment_data(env)
     env = Monitor(env, LOG_DIR)
     env = reduce_action_space(env)
@@ -175,7 +173,7 @@ def train_super_mario_bros(check_freq, total_timesteps):
 
 def train_super_mario_bros2(check_freq, total_timesteps):
     env = gym_super_mario_bros.make('SuperMarioBros-v0')
-    env = CustomRewardWrapper(env)
+    #env = CustomRewardWrapper(env)
     print_environment_data(env)
     env = Monitor(env, LOG_DIR)
     env = reduce_action_space(env)
@@ -335,66 +333,9 @@ def search_hyperparameters_optuna():
         print(f'    {key}: {value}')
 
 
-class CustomRewardWrapper(gymnasium.Wrapper):
-    def __init__(self, env):
-        super(CustomRewardWrapper, self).__init__(env)
-        self.x_position_last = 0
-        self.time_last = 0
-
-    def get_x_position(self):
-        return self.ram[0x6d] * 0x100 + self.ram[0x86]
-
-    def get_x_reward(self):
-        _reward = self.get_x_position() - self.x_position_last
-        self.x_position_last = self.get_x_position()
-        if _reward < -5 or _reward > 5:
-            return 0
-        return _reward
-
-    def read_mem_range(self, address, length):
-        return int(''.join(map(str, self.ram[address:address + length])))
-
-    def get_time(self):
-        return self.read_mem_range(0x07f8, 3)
-
-    def get_time_penalty(self):
-        _reward = self.get_time() - self.time_last
-        self.time_last = self.get_time()
-        return _reward
-
-    def player_state(self):
-        return self.ram[0x000e]
-
-    def y_viewport(self):
-        return self.ram[0x00b5]
-
-    def is_dying(self):
-        return self.player_state() == 0x0b or self.y_viewport() > 1
-
-    def is_dead(self):
-        return self.player_state() == 0x06
-
-    def get_death_penalty(self):
-        if self.is_dying() or self.is_dead():
-            return -25
-        return 0
-
-    def custom_reward_1(self):
-        return (4/9)*self.get_x_reward() + (1/9)*self.get_time_penalty() + (4/9)*self.get_death_penalty()
-
-    def custom_reward_2(self):
-        return self.get_x_reward() * (self.get_time()/100) + 100*self.get_death_penalty()
-
-    def step(self, action):
-        observation, _, terminated, truncated, info = self.env.step(action)
-        custom_reward = self.custom_reward()
-        return observation, custom_reward, terminated, truncated, info
-
-
-
 if __name__ == '__main__':
     #train_super_mario_bros2(200000,8000000)
     #train_super_mario_bros(200000,8000000)
-    train_space_invaders(200000, 1000000)
-    #test_space_invaders("train/dqn_optuna_1_BEST_1500000_308-95_676-02_9376-08.zip")
+    #train_space_invaders(200000, 1000000)
+    test_space_invaders("train/train_BEST_1000000_245-65_690-61_7956-50.zip")
     #search_hyperparameters_optuna()
