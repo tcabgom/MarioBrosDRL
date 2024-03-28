@@ -5,6 +5,7 @@ from stable_baselines3.common.monitor import Monitor
 
 import optuna
 from src.experiments import environment_preprocessing, experiment_utils
+from src.models import DQN_model
 
 
 def objective_aux(trial):
@@ -33,7 +34,6 @@ def objective_aux(trial):
         json.dump(hyperparams, f)
 
     model = create_custom_DQN_model(env, exploration_final_eps, learning_rate, train_frequency, buffer_size, 0.95)
-    print(exploration_final_eps, learning_rate, train_frequency, buffer_size, 0.95)
     callback = experiment_utils.TrainAndLoggingCallback(save_path=experiment_utils.CHECKPOINT_DIR, model_name='dqn_optuna_3', check_freq=1000,
                                        save_freq_best=750000, save_freq_force=750000)
     model.learn(total_timesteps=1500000, callback=callback)
@@ -44,6 +44,36 @@ def objective_aux(trial):
     del env
     del model
     return ret
+
+
+def suggest_hyperparameters_DQN(trial, env):
+    exploration_final_eps = trial.suggest_float('exploration_final_eps', 0.005, 0.01)
+    learning_rate = trial.suggest_float('learning_rate', 0.0001, 0.01)
+    train_frequency = trial.suggest_int('train_frequency', 2, 6)
+    buffer_size = trial.suggest_int('buffer_size', 600000, 1000000)
+    # gamma = trial.suggest_float('gamma', 0.95, 0.95)
+
+    hyperparams = {
+        'exploration_final_eps': exploration_final_eps,
+        'learning_rate': learning_rate,
+        'train_frequency': train_frequency,
+        'buffer_size': buffer_size,
+        'gamma': 0.95
+    }
+
+    with open(f"{experiment_utils.CHECKPOINT_DIR}/hyperparams_trial_{trial.number}.json", 'w') as f:
+        json.dump(hyperparams, f)
+
+    model = DQN_model.create_custom_DQN_model(env, exploration_final_eps, learning_rate, train_frequency, buffer_size, 0.95) #TODO
+    return model
+
+
+def suggest_hyperparameters_A2C(trial, env):
+    pass
+
+
+def suggest_hyperparameters_PPO(trial, env):
+    pass
 
 
 def objective(trial):

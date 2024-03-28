@@ -1,9 +1,12 @@
 from stable_baselines3 import DQN
 
+from src.experiments import experiment_utils
+
+
 def create_DQN_model(env):
     return DQN("CnnPolicy", env,
                 verbose=1,                     # Controls the verbosity level (0: no output, 1: training information)
-                tensorboard_log=LOG_DIR,       # Directory for storing Tensorboard logs
+                tensorboard_log=experiment_utils.LOG_DIR,       # Directory for storing Tensorboard logs
                 learning_rate = 0.01,          # The learning rate for the optimizer
                 buffer_size=100000,            # Size of the replay buffer
                 learning_starts=20000,         # Number of steps before starting to update the model

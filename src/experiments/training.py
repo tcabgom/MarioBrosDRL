@@ -33,4 +33,4 @@ def train_space_invaders(check_freq, total_timesteps, algorithm):
     print('Model trained')
 
 if __name__ == '__main__':
-    train_space_invaders(1000, 50000, 'DQN')
+    train_space_invaders(25000, 100000, 'A2C')

@@ -337,5 +337,5 @@ if __name__ == '__main__':
     #train_super_mario_bros2(200000,8000000)
     #train_super_mario_bros(200000,8000000)
     #train_space_invaders(200000, 1000000)
-    test_space_invaders("train/train_BEST_1000000_245-65_690-61_7956-50.zip")
+    test_space_invaders("../../train/train_BEST_100000_228-85_635-49_1077-50.zip")
     #search_hyperparameters_optuna()
