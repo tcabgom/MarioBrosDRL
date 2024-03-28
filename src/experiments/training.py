@@ -32,5 +32,6 @@ def train_space_invaders(check_freq, total_timesteps, algorithm):
     env.close()
     print('Model trained')
 
+
 if __name__ == '__main__':
     train_space_invaders(25000, 100000, 'A2C')
