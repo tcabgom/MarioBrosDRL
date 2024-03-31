@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 
 from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3 import A2C, DQN, PPO
@@ -72,7 +73,7 @@ def print_environment_data(env):
     print("################################################################\n")
 
 
-def test_random_actions_tutorial(env):
+def test_random_actions_tutorial(env, print_observation):
     """
     Renders the given environment performing random actions.
 
@@ -82,13 +83,17 @@ def test_random_actions_tutorial(env):
     Returns:
         None
     """
-    terminated = True
+    terminated = False
     truncated = False
+    observation = env.reset()
     for step in range(5000):
         if terminated or truncated:
             observation = env.reset()
             print("resetting environment")
-        observation, reward, terminated, truncated, info = env.step(env.action_space.sample())
+        observation, reward, done, info = env.step([env.action_space.sample()])
+        if print_observation:
+            plt.imshow(np.squeeze(observation))
+        plt.show()
         env.render()
 
     env.close()
@@ -107,7 +112,8 @@ def create_model(env, algorithm):
         model = None
     return model
 
-def train_agent(model, check_freq, total_timesteps):
+
+def train_agent(model, check_freq, save_freq_best, total_timesteps):
     """
     Trains the given environment with the given model
 
@@ -120,7 +126,10 @@ def train_agent(model, check_freq, total_timesteps):
     Returns:
         model: The model after all iterations of the training
     """
-    callback = TrainAndLoggingCallback(check_freq=check_freq, save_path=CHECKPOINT_DIR, model_name="train")
+    callback = TrainAndLoggingCallback(check_freq=check_freq,
+                                       save_path=CHECKPOINT_DIR,
+                                       save_freq_best=save_freq_best,
+                                       model_name="train")
     model.learn(total_timesteps=total_timesteps, callback=callback)
 
     return model
@@ -145,6 +154,7 @@ def load_and_test_model(env, model_path, algorithm):
     observation = vec_env.reset()
     for step in range(15000):
         action, _state = model.predict(observation)
+        print(action)
         observation, reward, done, info = vec_env.step(action)
         env.render()
 
