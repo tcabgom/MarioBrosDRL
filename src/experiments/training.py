@@ -34,4 +34,4 @@ def train_space_invaders(check_freq, save_freq_best, total_timesteps, algorithm)
 
 
 if __name__ == '__main__':
-    train_space_invaders(10000, 10000, 20000, "A2C")
+    train_space_invaders(500000, 250000, 1000000, "A2C")

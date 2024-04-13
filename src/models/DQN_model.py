@@ -28,7 +28,7 @@ def create_custom_DQN_model(env,
                      gamma):
     return DQN("CnnPolicy", env,
                 verbose=1,
-                tensorboard_log=LOG_DIR,
+                tensorboard_log=experiment_utils.LOG_DIR,
                 learning_rate=learning_rate,
                 buffer_size=buffer_size,
                 learning_starts=20000,

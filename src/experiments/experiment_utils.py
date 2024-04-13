@@ -154,8 +154,8 @@ def load_and_test_model(env, model_path, algorithm):
     observation = vec_env.reset()
     for step in range(15000):
         action, _state = model.predict(observation)
-        print(action)
         observation, reward, done, info = vec_env.step(action)
+        print(reward)
         env.render()
 
     env.close()

@@ -1,3 +1,4 @@
+import gc
 import json
 import torch
 import gymnasium
@@ -5,7 +6,7 @@ from stable_baselines3.common.monitor import Monitor
 
 import optuna
 from src.experiments import environment_preprocessing, experiment_utils
-from src.models import DQN_model
+from src.models import DQN_model, A2C_model, PPO_model
 
 
 def objective_aux(trial):
@@ -56,11 +57,50 @@ def suggest_hyperparameters_DQN(trial, env):
 
 
 def suggest_hyperparameters_A2C(trial, env):
-    pass
+    learning_rate = trial.suggest_float('learning_rate', 0.0001, 0.01)
+    n_steps = trial.suggest_int('n_steps', 5, 15)
+    gamma = trial.suggest_float('gamma', 0.95, 0.99)
+    ent_coef = trial.suggest_float('ent_coef', 0.0, 0.1)
+    vf_coef = trial.suggest_float('vf_coef', 0.25, 0.75)
+
+    hyperparams = {
+        'learning_rate': learning_rate,
+        'n_steps': n_steps,
+        'gamma': gamma,
+        'ent_coef': ent_coef,
+        'vf_coef': vf_coef
+    }
+
+    with open(f"{experiment_utils.CHECKPOINT_DIR}/hyperparams_trial_{trial.number}.json", 'w') as f:
+        json.dump(hyperparams, f)
+
+    model = A2C_model.create_custom_A2C_model(env, learning_rate, n_steps, gamma, ent_coef, vf_coef)
 
 
 def suggest_hyperparameters_PPO(trial, env):
-    pass
+    n_steps = trial.suggest_int('n_steps', 5, 15)
+    gamma = trial.suggest_float('gamma', 0.95, 0.99)
+    learning_rate = trial.suggest_float('learning_rate', 0.0001, 0.01)
+    ent_coef = trial.suggest_float('ent_coef', 0.0, 0.1)
+    vf_coef = trial.suggest_float('vf_coef', 0.25, 0.75)
+    clip_range = trial.suggest_float('clip_range', 0.1, 0.4)
+    clip_range_vf = trial.suggest_float('clip_range_vf', 0.1, 0.4)
+
+    hyperparams = {
+        'n_steps': n_steps,
+        'gamma': gamma,
+        'learning_rate': learning_rate,
+        'ent_coef': ent_coef,
+        'vf_coef': vf_coef,
+        'clip_range': clip_range,
+        'clip_range_vf': clip_range_vf
+    }
+
+    with open(f"{experiment_utils.CHECKPOINT_DIR}/hyperparams_trial_{trial.number}.json", 'w') as f:
+        json.dump(hyperparams, f)
+
+    model = PPO_model.create_custom_PPO_model(env, n_steps, gamma, learning_rate, ent_coef, vf_coef, clip_range, clip_range_vf)
+    return model
 
 
 def objective(trial):
