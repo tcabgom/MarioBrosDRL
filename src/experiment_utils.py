@@ -8,8 +8,8 @@ from stable_baselines3 import A2C, DQN, PPO
 
 import A2C_model, DQN_model, PPO_model
 
-CHECKPOINT_DIR = "../train/"
-LOG_DIR = "../logs/"
+CHECKPOINT_DIR = "train/"
+LOG_DIR = "logs/"
 
 
 class TrainAndLoggingCallback(BaseCallback):
@@ -155,7 +155,7 @@ def load_and_test_model(env, model_path, algorithm):
     for step in range(15000):
         action, _state = model.predict(observation)
         observation, reward, done, info = vec_env.step(action)
-        print(reward)
+        print(action)
         env.render()
 
     env.close()

@@ -4,9 +4,11 @@ import torch
 import gymnasium
 from stable_baselines3.common.monitor import Monitor
 
+import A2C_model, DQN_model, PPO_model
 import optuna
-from src.experiments import environment_preprocessing, experiment_utils
-from src.models import DQN_model, A2C_model, PPO_model
+import environment_preprocessing
+import experiment_utils
+
 
 
 def objective_aux(trial):
@@ -19,12 +21,13 @@ def objective_aux(trial):
     env = environment_preprocessing.enhance_observation_space(env)
     experiment_utils.print_environment_data(env)
 
-    model = suggest_hyperparameters_DQN(trial, env)
-    # model = suggest_hyperparameters_A2C(trial, env)
-    # model = suggest_hyperparameters_PPO(trial, env)
+    #model = suggest_hyperparameters_DQN(trial, env)
+    model = suggest_hyperparameters_A2C(trial, env)
+    #model = suggest_hyperparameters_PPO(trial, env)
+
     callback = experiment_utils.TrainAndLoggingCallback(save_path=experiment_utils.CHECKPOINT_DIR, model_name='dqn_optuna_3', check_freq=1000,
-                                       save_freq_best=750000, save_freq_force=750000)
-    model.learn(total_timesteps=1500000, callback=callback)
+                                       save_freq_best=500000, save_freq_force=500000)
+    model.learn(total_timesteps=1000000, callback=callback)
 
     ret = float(callback.current_best_info_mean['r'])
     torch.cuda.empty_cache()
@@ -75,6 +78,7 @@ def suggest_hyperparameters_A2C(trial, env):
         json.dump(hyperparams, f)
 
     model = A2C_model.create_custom_A2C_model(env, learning_rate, n_steps, gamma, ent_coef, vf_coef)
+    return model
 
 
 def suggest_hyperparameters_PPO(trial, env):
@@ -112,7 +116,7 @@ def objective(trial):
 def search_hyperparameters_optuna(save_freq_best, save_freq_force, total_timesteps, n_trials, algorithm):
     study = optuna.create_study(direction='maximize')
     results = []
-    study.optimize(objective, n_trials=50)
+    study.optimize(objective, n_trials=n_trials)
     print('### TRIALS COMPLETE ###')
     trial = study.best_trial
     print('Best Value: ', trial.value)

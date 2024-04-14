@@ -11,7 +11,7 @@ from stable_baselines3.common.vec_env import DummyVecEnv, VecFrameStack
 from stable_baselines3.common.monitor import Monitor
 import pandas as pd
 import numpy as np
-from . import optuna
+from . import optuna_training
 import torch
 import json
 
@@ -322,7 +322,7 @@ def create_custom_DQN_model(env,
 
 
 def search_hyperparameters_optuna():
-    study = optuna.create_study(direction='maximize')
+    study = optuna_training.create_study(direction='maximize')
     results = []
     study.optimize(objective, n_trials=50)
     print('### TRIALS COMPLETE ###')

@@ -54,5 +54,5 @@ def test_random_actions_space_invaders(print_observation):
 
 if __name__ == '__main__':
     #test_random_actions_super_mario_bros()
-    test_random_actions_space_invaders(False)
-    #test_space_invaders("../../train/train_PERIODIC_1000000_195-05_579-27_8085-42.zip", "A2C")
+    #test_random_actions_space_invaders(False)
+    test_space_invaders("train/train_PERIODIC_8000000_140-70_497-93_55424-33", "A2C")

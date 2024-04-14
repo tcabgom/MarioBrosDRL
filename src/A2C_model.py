@@ -21,4 +21,16 @@ def create_A2C_model(env):
 
 
 def create_custom_A2C_model(env, learning_rate, n_steps, gamma, ent_coef, vf_coef):
-    pass
+    return A2C("CnnPolicy", env,
+               verbose=1,
+               tensorboard_log=experiment_utils.LOG_DIR,
+               learning_rate=learning_rate,
+               gamma=gamma,
+               ent_coef=ent_coef,
+               vf_coef=vf_coef,
+               max_grad_norm=0.5,
+               gae_lambda=0.95,
+               n_steps=n_steps,
+               policy_kwargs=dict(net_arch=[64, 64]),
+               #device = "cuda:0"
+               )

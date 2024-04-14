@@ -1,5 +1,6 @@
 import gym_super_mario_bros
 import gymnasium
+import optuna_training
 from stable_baselines3.common.monitor import Monitor
 
 import environment_preprocessing
@@ -35,4 +36,5 @@ def train_space_invaders(check_freq, save_freq_best, total_timesteps, algorithm)
 
 
 if __name__ == '__main__':
-    train_space_invaders(500000, 250000, 1000000, "A2C")
+    #train_space_invaders(500000, 250000, 1000000, "A2C")
+    optuna_training.search_hyperparameters_optuna(500000, 500000, 1000000, 15, "A2C")
