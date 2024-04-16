@@ -1,4 +1,5 @@
 from stable_baselines3 import A2C
+from stable_baselines3.common.sb2_compat.rmsprop_tf_like import RMSpropTFLike
 
 import experiment_utils
 
@@ -11,11 +12,12 @@ def create_A2C_model(env):
                learning_rate=0.0005,                        # The learning rate for the optimizer
                gamma=0.99,                                  # Discount factor for future rewards
                ent_coef=0.01,                               # Entropy coefficient for the loss calculation
-               vf_coef=0.5,                                 # Value function coefficient for the loss calculation
+               vf_coef=0.25,                                 # Value function coefficient for the loss calculation
                max_grad_norm=0.5,                           # Clipping of gradients during optimization
                gae_lambda=0.95,                             # Lambda for the Generalized Advantage Estimator
-               n_steps=5,                                   # Number of steps to run for each environment per update
-               policy_kwargs=dict(net_arch=[64, 64]),       # Additional network architecture
+               n_steps=16,                                  # Number of steps to run for each environment per update
+               policy_kwargs=dict(optimizer_class=RMSpropTFLike, optimizer_kwargs=dict(eps=1e-5)),  # Additional network architecture
+               normalize_advantage=False,                    # Whether to normalize the advantage
                #device = "cuda:0"
                )
 

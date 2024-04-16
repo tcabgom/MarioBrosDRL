@@ -8,7 +8,7 @@ from stable_baselines3 import A2C, DQN, PPO
 
 import A2C_model, DQN_model, PPO_model
 
-CHECKPOINT_DIR = "train/"
+CHECKPOINT_DIR = "train2/"
 LOG_DIR = "logs/"
 
 
