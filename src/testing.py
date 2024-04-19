@@ -24,7 +24,7 @@ def test_space_invaders(model_path, algorithm):
     env = Monitor(env, experiment_utils.LOG_DIR)
     #env = environment_preprocessing.reduce_observation_space(env)
     env = environment_preprocessing.atari_wrapper(env)
-    #env = environment_preprocessing.enhance_observation_space(env)
+    env = environment_preprocessing.enhance_observation_space(env)
     experiment_utils.print_environment_data(env)
     experiment_utils.load_and_test_model(env, model_path, algorithm)
     print("Test completed")
@@ -48,7 +48,7 @@ def test_random_actions_space_invaders(print_observation):
     env = Monitor(env, experiment_utils.LOG_DIR)
     #env = environment_preprocessing.reduce_observation_space(env)
     env = environment_preprocessing.atari_wrapper(env)
-    env = environment_preprocessing.enhance_observation_space(env)
+    #env = environment_preprocessing.enhance_observation_space(env)
     experiment_utils.print_environment_data(env)
     experiment_utils.test_random_actions_tutorial(env, print_observation)
     env.close()
@@ -56,5 +56,5 @@ def test_random_actions_space_invaders(print_observation):
 
 if __name__ == '__main__':
     #test_random_actions_super_mario_bros()
-    test_random_actions_space_invaders(True)
-    #test_space_invaders("../train/train_BEST_10000000_615-45_858-00_59019-71", "A2C")
+    #test_random_actions_space_invaders(True)
+    test_space_invaders("../train/train_BEST_14000000_687-45_3712-47_55818-44", "A2C")

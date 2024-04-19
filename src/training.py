@@ -27,8 +27,8 @@ def train_space_invaders(check_freq, save_freq_best, total_timesteps, algorithm)
     experiment_utils.print_environment_data(env)
     env = Monitor(env, experiment_utils.LOG_DIR)
     #env = environment_preprocessing.reduce_observation_space(env)
-    #env = environment_preprocessing.enhance_observation_space(env)
     env = environment_preprocessing.atari_wrapper(env)
+    env = environment_preprocessing.enhance_observation_space(env)
     experiment_utils.print_environment_data(env)
     model = experiment_utils.create_model(env, algorithm)
     experiment_utils.train_agent(model, check_freq, save_freq_best, total_timesteps)
@@ -37,5 +37,5 @@ def train_space_invaders(check_freq, save_freq_best, total_timesteps, algorithm)
 
 
 if __name__ == '__main__':
-    train_space_invaders(2000000, 1000000, 14000000, "A2C")
+    train_space_invaders(2000000, 1000000, 14000000, "PPO")
     #optuna_training.search_hyperparameters_optuna(500000, 500000, 1000000, 15, "A2C")
