@@ -33,6 +33,9 @@ class CustomRewardWrapper(gymnasium.Wrapper):
     def y_viewport(self):
         return self.ram[0x00b5]
 
+    def get_powerup_state(self):
+        return self.ram[0x0755]      # 0 = small, 1 = big, 2 = fire
+
     def is_dying(self):
         return self.player_state() == 0x0b or self.y_viewport() > 1
 
@@ -50,7 +53,10 @@ class CustomRewardWrapper(gymnasium.Wrapper):
     def custom_reward_2(self):
         return self.get_x_reward() * (self.get_time()/100) + 100*self.get_death_penalty()
 
+    def custom_reward_3(self):
+        return self.get_x_reward()*(self.get_powerup_state()+1) + self.get_time_penalty() + self.get_death_penalty()
+
     def step(self, action):
         observation, _, terminated, truncated, info = self.env.step(action)
-        custom_reward = self.custom_reward()
+        custom_reward = self.custom_reward_3()      # Cambiar nombre función para cambiar recompensa customizada
         return observation, custom_reward, terminated, truncated, info

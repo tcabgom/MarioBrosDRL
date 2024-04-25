@@ -22,6 +22,24 @@ def create_A2C_model(env):
                )
 
 
+def create_A2C_mlp_model(env):
+    # Cambiamos la política a MlpPolicy para entrenar sobre RAM
+    return A2C("MlpPolicy", env,
+               verbose=1,
+               tensorboard_log=experiment_utils.LOG_DIR,
+               learning_rate=0.0005,
+               gamma=0.99,
+               ent_coef=0.01,
+               vf_coef=0.25,
+               max_grad_norm=0.5,
+               gae_lambda=0.95,
+               n_steps=16,
+               policy_kwargs=dict(net_arch=[256, 256]),
+               normalize_advantage=False,
+               #device = "cuda:0"
+               )
+
+
 def create_custom_A2C_model(env, learning_rate, n_steps, gamma, ent_coef, vf_coef):
     return A2C("CnnPolicy", env,
                verbose=1,

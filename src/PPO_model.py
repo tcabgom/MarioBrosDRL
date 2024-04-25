@@ -8,7 +8,7 @@ def create_PPO_model(env) -> PPO:
     return PPO("CnnPolicy", env,
                 verbose=1,                                  # Controls the verbosity level (0: no output, 1: training information)
                 tensorboard_log=experiment_utils.LOG_DIR,   # Directory for storing Tensorboard logs
-                learning_rate=0.000025,                     # The learning rate for the optimizer
+                learning_rate=0.00025,                     # The learning rate for the optimizer
                 gamma=0.99,                                 # Discount factor for future rewards
                 gae_lambda=0.95,                            # Lambda for the Generalized Advantage Estimator
                 max_grad_norm=0.5,                          # Clipping of gradients during optimization

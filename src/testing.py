@@ -19,7 +19,7 @@ def test_super_mario_bros(model_path, algorithm):
 
 
 def test_space_invaders(model_path, algorithm):
-    env = gymnasium.make("ALE/SpaceInvaders-v5", render_mode='human')
+    env = gymnasium.make("SpaceInvadersNoFrameskip-v4", render_mode='human')
     experiment_utils.print_environment_data(env)
     env = Monitor(env, experiment_utils.LOG_DIR)
     #env = environment_preprocessing.reduce_observation_space(env)
