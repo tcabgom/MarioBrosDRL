@@ -47,6 +47,6 @@ def train_space_invaders_ram(check_freq, save_freq_best, total_timesteps):
 
 
 if __name__ == '__main__':
-    #train_space_invaders_ram(10000, 10000, 10000)
-    train_space_invaders(2000000, 1000000, 8000000, "PPO")
+    train_space_invaders_ram(2000000, 1000000, 8000000)
+    #train_space_invaders(2000000, 1000000, 8000000, "PPO")
     #optuna_training.search_hyperparameters_optuna(500000, 500000, 1000000, 15, "A2C")
