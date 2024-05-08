@@ -12,7 +12,7 @@ def create_PPO_model(env) -> PPO:
                 #gamma=0.99,                                 # Discount factor for future rewards
                 #gae_lambda=0.95,                            # Lambda for the Generalized Advantage Estimator
                 #max_grad_norm=0.5,                          # Clipping of gradients during optimization
-                n_steps=2048,                                # Number of steps to run for each environment per update
+                n_steps=512,                                # Number of steps to run for each environment per update
                 #n_epochs=4,                                 # Number of epochs when optimizing the surrogate loss
                 #batch_size=256,                             # Minibatch size for each environment
                 #clip_range=0.1,                             # Clipping parameter, mainly used for PPO

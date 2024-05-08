@@ -19,13 +19,13 @@ def test_super_mario_bros(model_path, algorithm):
 
 
 def test_space_invaders(model_path, algorithm):
-    #env = gymnasium.make("SpaceInvadersNoFrameskip-v4", render_mode='human')
-    env = gymnasium.make("SpaceInvaders-ramNoFrameskip-v4", render_mode='human')
+    env = gymnasium.make("SpaceInvadersNoFrameskip-v4", render_mode='human')
+    #env = gymnasium.make("SpaceInvaders-ramNoFrameskip-v4", render_mode='human')
     experiment_utils.print_environment_data(env)
     env = Monitor(env, experiment_utils.LOG_DIR)
     #env = environment_preprocessing.reduce_observation_space(env)
-    #env = environment_preprocessing.atari_wrapper(env)
-    #env = environment_preprocessing.enhance_observation_space(env)
+    env = environment_preprocessing.atari_wrapper(env)
+    env = environment_preprocessing.enhance_observation_space(env)
     experiment_utils.print_environment_data(env)
     experiment_utils.load_and_test_model(env, model_path, algorithm)
     print("Test completed")
@@ -59,5 +59,5 @@ if __name__ == '__main__':
     #test_random_actions_super_mario_bros(False)
     #test_random_actions_space_invaders(True)
     #test_super_mario_bros("../results/SuperMarioBros/DQN/01_BestModelWithManualExperiments/ppo_12_BEST_3350000_2222-27_1358-38_45956-72", "PPO")
-    #test_space_invaders("../train/train_BEST_14000000_687-45_3712-47_55818-44", "A2C")
-    test_space_invaders("../results/SpaceInvaders/A2C/RAM/01_BestModelWithManualExperiments/train_PERIODIC_6000000_270-00_2151-00_5153-64", "A2C")
+    test_space_invaders("../train/train_PERIODIC_6800000_560-30_4071-77_55379-64", "PPO")
+    #test_space_invaders("../results/SpaceInvaders/A2C/RAM/01_BestModelWithManualExperiments/train_PERIODIC_6000000_270-00_2151-00_5153-64", "A2C")
