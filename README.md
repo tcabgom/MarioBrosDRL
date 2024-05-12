@@ -4,11 +4,11 @@ This repository contains Python code for training an AI model to play Space Inva
 
 ## Results Examples
 
-### Space Invaders
+### Space Invaders (A2C)
 
 ![Gameplay](results/SpaceInvaders/A2C/Frames/03_FirstModelWithSpaceInvadersNoFrameskip-v4/SpaceInvadersA2CDetectingBullets.gif)
 
-### Super Mario Bros
+### Super Mario Bros (PPO)
 
 ![Gameplay](results/SuperMarioBros/PPO/01_BestModelWithManualExperiments/SuperMarioBrosPPOBestModel.gif)
 
