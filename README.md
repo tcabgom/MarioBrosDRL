@@ -2,13 +2,13 @@
 
 This repository contains Python code for training an AI model to play Space Invaders and Super Mario Bros using Reinforcement Learning algorithms like Deep Q-Networks (DQN), Advantage Actor-Critic (A2C), and Proximal Policy Optimization (PPO) implemented with OpenAI's Gym library.
 
-# Examples
+## Results Examples
 
-## Space Invaders
+### Space Invaders
 
 ![Gameplay](results/SpaceInvaders/A2C/Frames/03_FirstModelWithSpaceInvadersNoFrameskip-v4/SpaceInvadersA2CDetectingBullets.gif)
 
-## Super Mario Bros
+### Super Mario Bros
 
 ![Gameplay](results/SuperMarioBros/PPO/01_BestModelWithManualExperiments/SuperMarioBrosPPOBestModel.gif)
 
