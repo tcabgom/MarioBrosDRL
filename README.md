@@ -11,3 +11,7 @@ You can install the dependencies using pip:
 ```bash
 pip install -r requirements.txt
 ```
+## Available Algorithms
+- DQN (Deep Q-Networks)
+- A2C (Advantage Actor-Critic)
+- PPO (Proximal Policy Optimization)
