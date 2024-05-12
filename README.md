@@ -6,11 +6,6 @@ This repository contains Python code for training an AI model to play Space Inva
 
 ## Requirements
 
-- Python 3.x
-- OpenAI Gym
-- PyTorch
-- NumPy
-
 You can install the dependencies using pip:
 
 ```bash
