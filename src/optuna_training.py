@@ -25,9 +25,9 @@ def objective_aux(trial):
     model = suggest_hyperparameters_A2C(trial, env)
     #model = suggest_hyperparameters_PPO(trial, env)
 
-    callback = experiment_utils.TrainAndLoggingCallback(save_path=experiment_utils.CHECKPOINT_DIR, model_name='dqn_optuna_3', check_freq=1000,
-                                       save_freq_best=500000, save_freq_force=500000)
-    model.learn(total_timesteps=1000000, callback=callback)
+    callback = experiment_utils.TrainAndLoggingCallback(save_path=experiment_utils.CHECKPOINT_DIR, model_name='a2c_optuna_ram', check_freq=1000,
+                                       save_freq_best=500000, save_freq_force=1000000)
+    model.learn(total_timesteps=2000000, callback=callback)
 
     ret = float(callback.current_best_info_mean['r'])
     torch.cuda.empty_cache()
@@ -61,9 +61,9 @@ def suggest_hyperparameters_DQN(trial, env):
 
 def suggest_hyperparameters_A2C(trial, env):
     learning_rate = trial.suggest_float('learning_rate', 0.0001, 0.01)
-    n_steps = trial.suggest_int('n_steps', 5, 15)
-    gamma = trial.suggest_float('gamma', 0.95, 0.99)
-    ent_coef = trial.suggest_float('ent_coef', 0.0, 0.1)
+    n_steps = trial.suggest_int('n_steps', 8, 32)
+    gamma = trial.suggest_float('gamma', 0.95, 0.999)
+    ent_coef = trial.suggest_float('ent_coef', 0.001, 0.033)
     vf_coef = trial.suggest_float('vf_coef', 0.25, 0.75)
 
     hyperparams = {
@@ -77,7 +77,7 @@ def suggest_hyperparameters_A2C(trial, env):
     with open(f"{experiment_utils.CHECKPOINT_DIR}/hyperparams_trial_{trial.number}.json", 'w') as f:
         json.dump(hyperparams, f)
 
-    model = A2C_model.create_custom_A2C_model(env, learning_rate, n_steps, gamma, ent_coef, vf_coef)
+    model = A2C_model.create_custom_A2C_mlp_model(env, learning_rate, n_steps, gamma, ent_coef, vf_coef)
     return model
 
 
@@ -113,7 +113,7 @@ def objective(trial):
     return ret
 
 
-def search_hyperparameters_optuna(save_freq_best, save_freq_force, total_timesteps, n_trials, algorithm):
+def search_hyperparameters_optuna(n_trials):
     study = optuna.create_study(direction='maximize')
     results = []
     study.optimize(objective, n_trials=n_trials)

@@ -34,14 +34,14 @@ def create_A2C_mlp_model(env):
                max_grad_norm=0.5,
                gae_lambda=0.95,
                n_steps=16,
-               policy_kwargs=dict(net_arch=[256, 256]),
+               policy_kwargs=dict(optimizer_class=RMSpropTFLike, optimizer_kwargs=dict(eps=1e-5)),
                normalize_advantage=False,
                #device = "cuda:0"
                )
 
 
-def create_custom_A2C_model(env, learning_rate, n_steps, gamma, ent_coef, vf_coef):
-    return A2C("CnnPolicy", env,
+def create_custom_A2C_mlp_model(env, learning_rate, n_steps, gamma, ent_coef, vf_coef):
+    return A2C("MlpPolicy", env,
                verbose=1,
                tensorboard_log=experiment_utils.LOG_DIR,
                learning_rate=learning_rate,
@@ -51,6 +51,6 @@ def create_custom_A2C_model(env, learning_rate, n_steps, gamma, ent_coef, vf_coe
                max_grad_norm=0.5,
                gae_lambda=0.95,
                n_steps=n_steps,
-               policy_kwargs=dict(net_arch=[64, 64]),
+               policy_kwargs=dict(optimizer_class=RMSpropTFLike, optimizer_kwargs=dict(eps=1e-5)),
                #device = "cuda:0"
                )

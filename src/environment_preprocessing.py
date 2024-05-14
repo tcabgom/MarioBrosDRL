@@ -13,7 +13,7 @@ def reduce_action_space(env):
 def reduce_observation_space(env):
     # https://gymnasium.farama.org/api/wrappers/
     env = GrayScaleObservation(env, keep_dim=True) # Convert the image to black and white
-    env = ResizeObservation(env, shape=(120, 128))   # Reduce the image size
+    env = ResizeObservation(env, shape=(84, 84))   # Reduce the image size
 
     return env
 
