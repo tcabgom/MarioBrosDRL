@@ -14,7 +14,8 @@ import experiment_utils
 def objective_aux(trial):
     # https://optuna.org/
 
-    env = gymnasium.make("ALE/SpaceInvaders-v5", render_mode='rgb_array')
+    #env = gymnasium.make("ALE/SpaceInvaders-v5", render_mode='rgb_array')
+    env = gymnasium.make("SpaceInvaders-ramNoFrameskip-v4", render_mode='rgb_array')
     experiment_utils.print_environment_data(env)
     env = Monitor(env, experiment_utils.LOG_DIR)
     env = environment_preprocessing.reduce_observation_space(env)
