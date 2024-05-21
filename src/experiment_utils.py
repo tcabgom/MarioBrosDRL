@@ -8,7 +8,7 @@ from stable_baselines3 import A2C, DQN, PPO
 
 import A2C_model, DQN_model, PPO_model
 
-CHECKPOINT_DIR = "train2/"
+CHECKPOINT_DIR = "train/"
 LOG_DIR = "logs/"
 
 
@@ -101,6 +101,7 @@ def test_random_actions_tutorial(env, print_observation):
 
 
 def create_model(env, algorithm):
+    # Auxiliar function to prevent code duplication
     if algorithm == "DQN":
         model = DQN_model.create_DQN_model(env)
     elif algorithm == "PPO":

@@ -41,6 +41,7 @@ def create_A2C_mlp_model(env):
 
 
 def create_custom_A2C_mlp_model(env, learning_rate, n_steps, gamma, ent_coef, vf_coef):
+    # La función usada por Optuna
     return A2C("MlpPolicy", env,
                verbose=1,
                tensorboard_log=experiment_utils.LOG_DIR,

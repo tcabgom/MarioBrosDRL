@@ -26,6 +26,7 @@ def create_custom_DQN_model(env,
                      train_frequency,
                      buffer_size,
                      gamma):
+    # For Optuna experiments
     return DQN("CnnPolicy", env,
                 verbose=1,
                 tensorboard_log=experiment_utils.LOG_DIR,

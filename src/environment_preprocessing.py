@@ -25,4 +25,15 @@ def enhance_observation_space(env):
 
 
 def atari_wrapper(env):
+    # https://stable-baselines3.readthedocs.io/en/master/common/atari_wrappers.html
+
+    # Noop reset: obtain initial state by taking random number of no-ops on reset
+    # Frame skipping: 4 by default
+    # Max-pooling: most recent two observations
+    # Termination signal when a life is lost.
+    # Resize to a square image: 84x84 by default
+    # Grayscale observation
+    # Clip reward to {-1, 0, 1}
+    # Sticky actions: disabled by default
+
     return AtariWrapper(env)

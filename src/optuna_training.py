@@ -38,6 +38,7 @@ def objective_aux(trial):
 
 
 def suggest_hyperparameters_DQN(trial, env):
+    # For DQN experiments
     exploration_final_eps = trial.suggest_float('exploration_final_eps', 0.005, 0.01)
     learning_rate = trial.suggest_float('learning_rate', 0.0001, 0.01)
     train_frequency = trial.suggest_int('train_frequency', 2, 6)
@@ -60,6 +61,7 @@ def suggest_hyperparameters_DQN(trial, env):
 
 
 def suggest_hyperparameters_A2C(trial, env):
+    # For A2C experiments
     learning_rate = trial.suggest_float('learning_rate', 0.0001, 0.01)
     n_steps = trial.suggest_int('n_steps', 8, 32)
     gamma = trial.suggest_float('gamma', 0.95, 0.999)
@@ -82,6 +84,7 @@ def suggest_hyperparameters_A2C(trial, env):
 
 
 def suggest_hyperparameters_PPO(trial, env):
+    # For PPO experiments
     n_steps = trial.suggest_int('n_steps', 5, 15)
     gamma = trial.suggest_float('gamma', 0.95, 0.99)
     learning_rate = trial.suggest_float('learning_rate', 0.0001, 0.01)
