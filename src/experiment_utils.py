@@ -151,6 +151,7 @@ def load_and_test_model(env, model_path, algorithm):
     else:
         print("Invalid Algorithm")
         return
+    print(model.policy)
     vec_env = model.get_env()
     observation = vec_env.reset()
     for step in range(50000):

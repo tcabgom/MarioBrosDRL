@@ -5,8 +5,8 @@ from keras.optimizers import RMSprop
 from stable_baselines3 import DQN
 from stable_baselines3.common.vec_env import DummyVecEnv
 
-CHECKPOINT_DIR = "../../train/"
-LOG_DIR = "../../logs/"
+CHECKPOINT_DIR = "train/"
+LOG_DIR = "logs/"
 
 
 def huber_loss(truth, prediction, delta: float=1.0):

@@ -4,6 +4,7 @@ from stable_baselines3.common.monitor import Monitor
 
 import environment_preprocessing
 import experiment_utils
+import custom_reward
 
 
 def test_super_mario_bros(model_path, algorithm):
@@ -34,6 +35,7 @@ def test_space_invaders(model_path, algorithm):
 def test_random_actions_super_mario_bros(print_observation):
     env = gym_super_mario_bros.make('SuperMarioBros-v0', render_mode="human")
     experiment_utils.print_environment_data(env)
+    env = custom_reward.CustomRewardWrapper(env)
     env = Monitor(env, experiment_utils.LOG_DIR)
     env = environment_preprocessing.reduce_action_space(env)
     env = environment_preprocessing.reduce_observation_space(env)
@@ -56,9 +58,7 @@ def test_random_actions_space_invaders(print_observation):
 
 
 if __name__ == '__main__':
-    #test_random_actions_super_mario_bros(False)
+    test_random_actions_super_mario_bros(False)
     #test_random_actions_space_invaders(True)
-    #test_super_mario_bros("../results/SuperMarioBros/DQN/01_BestModelWithManualExperiments/ppo_12_BEST_3350000_2222-27_1358-38_45956-72", "PPO")
-    test_space_invaders("../train/train_PERIODIC_12000000_474-25_3077-17_201672-98", "PPO")
     #test_space_invaders("../results/SpaceInvaders/DQN/01_BestModelWithManualExperiments/DQN_02/best_model_7800000","DQN")
     #test_space_invaders("../results/SpaceInvaders/A2C/RAM/01_BestModelWithManualExperiments/train_PERIODIC_6000000_270-00_2151-00_5153-64", "A2C")

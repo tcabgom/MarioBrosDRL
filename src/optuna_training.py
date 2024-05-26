@@ -6,7 +6,6 @@ from stable_baselines3.common.monitor import Monitor
 
 import A2C_model, DQN_model, PPO_model
 import optuna
-import environment_preprocessing
 import experiment_utils
 
 
@@ -18,8 +17,8 @@ def objective_aux(trial):
     env = gymnasium.make("SpaceInvaders-ramNoFrameskip-v4", render_mode='rgb_array')
     experiment_utils.print_environment_data(env)
     env = Monitor(env, experiment_utils.LOG_DIR)
-    env = environment_preprocessing.reduce_observation_space(env)
-    env = environment_preprocessing.enhance_observation_space(env)
+    #env = environment_preprocessing.reduce_observation_space(env)
+    #env = environment_preprocessing.enhance_observation_space(env)
     experiment_utils.print_environment_data(env)
 
     #model = suggest_hyperparameters_DQN(trial, env)
